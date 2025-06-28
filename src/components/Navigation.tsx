@@ -13,7 +13,7 @@ const Navigation = ({ activeTab, onTabChange }: NavigationProps) => {
     { id: 'polls', icon: TrendingUp, label: 'Polls' },
     { id: 'create', icon: Plus, label: 'Create' },
     { id: 'statistics', icon: BarChart3, label: 'Stats' },
-    { id: 'profile', icon: User, label: 'Profile' },
+    { id: 'myapp', icon: User, label: 'My App' },
   ];
 
   return (

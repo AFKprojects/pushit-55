@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
-import { Users, TrendingUp, BarChart3, User } from 'lucide-react';
+
+import { useState, useEffect } from 'react';
 import HoldButton from '../components/HoldButton';
 import Navigation from '../components/Navigation';
 import Statistics from '../components/Statistics';
-import Profile from '../components/Profile';
 import Polls from '../components/Polls';
 import Create from '../components/Create';
+import MyApp from '../components/MyApp';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('main');
@@ -31,13 +31,13 @@ const Index = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'polls':
-        return <Polls />;
+        return <Polls onNavigateToCreate={() => setActiveTab('create')} />;
       case 'create':
         return <Create />;
       case 'statistics':
         return <Statistics />;
-      case 'profile':
-        return <Profile />;
+      case 'myapp':
+        return <MyApp />;
       default:
         return (
           <div className="flex-1 flex flex-col items-center justify-center px-6">
@@ -80,6 +80,19 @@ const Index = () => {
         
         <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
       </div>
+      
+      <style jsx>{`
+        @keyframes heartbeat {
+          0%, 100% { 
+            transform: scale(1.5); 
+            opacity: 0.3; 
+          }
+          50% { 
+            transform: scale(1.7); 
+            opacity: 0.1; 
+          }
+        }
+      `}</style>
     </div>
   );
 };

@@ -1,14 +1,21 @@
 
-import { BarChart3, Globe, Clock, Trophy, TrendingUp } from 'lucide-react';
+import { BarChart3, Globe, Clock, Trophy, TrendingUp, Users } from 'lucide-react';
 
 const Statistics = () => {
   const stats = [
+    {
+      icon: Users,
+      title: 'Community Members',
+      value: '24,891',
+      change: 'Total registered',
+      color: 'from-blue-500 to-cyan-500'
+    },
     {
       icon: Clock,
       title: 'Button Presses (24h)',
       value: '12,847',
       change: '+2.3%',
-      color: 'from-blue-500 to-cyan-500'
+      color: 'from-purple-500 to-pink-500'
     },
     {
       icon: Trophy,
@@ -19,9 +26,9 @@ const Statistics = () => {
     },
     {
       icon: TrendingUp,
-      title: 'Active Right Now',
-      value: '89',
-      change: 'Live count',
+      title: 'Max Simultaneous Today',
+      value: '892',
+      change: 'Daily record',
       color: 'from-green-500 to-emerald-500'
     }
   ];
@@ -41,8 +48,8 @@ const Statistics = () => {
     <div className="flex-1 overflow-y-auto px-6 py-6">
       <div className="max-w-md mx-auto space-y-6">
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-white mb-2">Global Statistics</h2>
-          <p className="text-white/70">Real-time data from around the world</p>
+          <h2 className="text-2xl font-bold text-white mb-2">Community Statistics</h2>
+          <p className="text-white/70">Data from our global community</p>
         </div>
 
         {/* Key Stats */}
@@ -113,8 +120,8 @@ const Statistics = () => {
           </h3>
           <div className="text-white/70 text-sm space-y-1">
             <p>• Someone from Japan just held for 3 seconds</p>
-            <p>• 12 people from USA currently holding</p>
-            <p>• New record set 2 hours ago: 1,247 simultaneous users</p>
+            <p>• New poll created: "Best time to connect?"</p>
+            <p>• Community milestone: 25K members reached!</p>
           </div>
         </div>
       </div>
