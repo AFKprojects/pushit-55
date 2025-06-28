@@ -42,10 +42,10 @@ const Index = () => {
         return (
           <div className="flex-1 flex flex-col items-center justify-center px-6">
             <div className="text-center mb-12">
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
-                Hold Together
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-400 to-yellow-500 bg-clip-text text-transparent mb-4">
+                HIVE
               </h1>
-              <p className="text-gray-600 text-lg max-w-md">
+              <p className="text-gray-300 text-lg max-w-md">
                 Hold the button for 3 seconds to see how many people around the world are holding with you
               </p>
             </div>
@@ -58,11 +58,11 @@ const Index = () => {
 
             {isHolding && globalHolders > 0 && (
               <div className="mt-8 text-center animate-fade-in">
-                <div className="bg-white/20 backdrop-blur-sm rounded-2xl px-8 py-6 border border-white/30">
-                  <div className="text-3xl font-bold text-white mb-2 animate-pulse">
+                <div className="bg-black/40 backdrop-blur-sm rounded-2xl px-8 py-6 border border-orange-500/30">
+                  <div className="text-3xl font-bold text-orange-400 mb-2 animate-pulse">
                     {globalHolders}
                   </div>
-                  <div className="text-white/80 text-sm">
+                  <div className="text-orange-200 text-sm">
                     {globalHolders === 1 ? 'person is' : 'people are'} holding with you
                   </div>
                 </div>
@@ -74,25 +74,27 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-orange-900 relative overflow-hidden">
       <div className="relative z-10 flex flex-col h-screen">
         {renderContent()}
         
         <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
       </div>
       
-      <style jsx>{`
-        @keyframes heartbeat {
-          0%, 100% { 
-            transform: scale(1.5); 
-            opacity: 0.3; 
+      <style>
+        {`
+          @keyframes heartbeat {
+            0%, 100% { 
+              transform: scale(1.5); 
+              opacity: 0.3; 
+            }
+            50% { 
+              transform: scale(1.7); 
+              opacity: 0.1; 
+            }
           }
-          50% { 
-            transform: scale(1.7); 
-            opacity: 0.1; 
-          }
-        }
-      `}</style>
+        `}
+      </style>
     </div>
   );
 };
