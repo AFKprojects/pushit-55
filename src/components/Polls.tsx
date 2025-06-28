@@ -2,7 +2,11 @@
 import { useState } from 'react';
 import { TrendingUp, Users, Clock } from 'lucide-react';
 
-const Polls = () => {
+interface PollsProps {
+  onNavigateToCreate?: () => void;
+}
+
+const Polls = ({ onNavigateToCreate }: PollsProps) => {
   const [polls] = useState([
     {
       id: 1,
@@ -34,11 +38,11 @@ const Polls = () => {
     <div className="flex-1 px-6 py-8 overflow-y-auto">
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-400 to-yellow-500 bg-clip-text text-transparent mb-2">
             Community Polls
           </h1>
-          <p className="text-gray-600">
-            Share your thoughts with the holding community
+          <p className="text-gray-300">
+            Share your thoughts with the HIVE community
           </p>
         </div>
 
@@ -46,13 +50,13 @@ const Polls = () => {
           {polls.map((poll) => (
             <div
               key={poll.id}
-              className="bg-white/20 backdrop-blur-sm rounded-2xl p-6 border border-white/30"
+              className="bg-black/40 backdrop-blur-sm rounded-2xl p-6 border border-orange-500/30"
             >
               <div className="flex items-start justify-between mb-4">
-                <h3 className="text-lg font-semibold text-white mb-2">
+                <h3 className="text-lg font-semibold text-orange-200 mb-2">
                   {poll.question}
                 </h3>
-                <div className="flex items-center text-white/70 text-sm">
+                <div className="flex items-center text-orange-300/70 text-sm">
                   <Clock size={16} className="mr-1" />
                   {poll.timeLeft}
                 </div>
@@ -62,15 +66,15 @@ const Polls = () => {
                 {poll.options.map((option, index) => (
                   <div
                     key={index}
-                    className="bg-white/10 rounded-lg p-3 cursor-pointer hover:bg-white/20 transition-colors"
+                    className="bg-black/20 rounded-lg p-3 cursor-pointer hover:bg-black/40 transition-colors"
                   >
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-white">{option.text}</span>
-                      <span className="text-white/80 text-sm">{option.percentage}%</span>
+                      <span className="text-orange-200">{option.text}</span>
+                      <span className="text-orange-300/80 text-sm">{option.percentage}%</span>
                     </div>
-                    <div className="bg-white/20 rounded-full h-2">
+                    <div className="bg-black/40 rounded-full h-2">
                       <div
-                        className="bg-gradient-to-r from-blue-400 to-purple-400 h-2 rounded-full transition-all duration-300"
+                        className="bg-gradient-to-r from-orange-400 to-yellow-500 h-2 rounded-full transition-all duration-300"
                         style={{ width: `${option.percentage}%` }}
                       />
                     </div>
@@ -78,7 +82,7 @@ const Polls = () => {
                 ))}
               </div>
 
-              <div className="flex items-center justify-between text-white/70 text-sm">
+              <div className="flex items-center justify-between text-orange-300/70 text-sm">
                 <div className="flex items-center">
                   <Users size={16} className="mr-1" />
                   {poll.totalVotes} votes
@@ -93,8 +97,11 @@ const Polls = () => {
         </div>
 
         <div className="mt-8 text-center">
-          <button className="bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl px-6 py-3 border border-white/30 text-white font-medium transition-colors">
-            Create New Poll
+          <button 
+            onClick={onNavigateToCreate}
+            className="bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-xl px-6 py-3 border border-orange-500/30 text-orange-200 font-medium transition-colors"
+          >
+            Create Your Poll
           </button>
         </div>
       </div>
