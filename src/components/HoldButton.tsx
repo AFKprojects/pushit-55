@@ -56,10 +56,10 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders }: HoldButtonProps) 
     };
   }, []);
 
-  const getButtonGradient = () => {
-    if (isActivated) return 'from-mint-green to-sky-blue';
-    if (isPressed) return 'from-indigo-blue to-sky-blue';
-    return 'from-indigo-blue to-soft-purple';
+  const getButtonColor = () => {
+    if (isActivated) return 'from-green-400 to-emerald-500';
+    if (isPressed) return 'from-yellow-400 to-orange-500';
+    return 'from-blue-500 to-purple-600';
   };
 
   const getButtonScale = () => {
@@ -72,7 +72,7 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders }: HoldButtonProps) 
     <div className="relative">
       {/* Outer glow effect */}
       {isActivated && (
-        <div className="absolute inset-0 rounded-full bg-mint-green/30 animate-ping scale-150" />
+        <div className="absolute inset-0 rounded-full bg-green-400/30 animate-ping scale-150" />
       )}
       
       {/* Progress ring */}
@@ -95,8 +95,8 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders }: HoldButtonProps) 
             cy="50"
             r="45"
             fill="none"
-            stroke="#81D4FA"
-            strokeWidth="3"
+            stroke="white"
+            strokeWidth="2"
             strokeDasharray={`${2 * Math.PI * 45}`}
             strokeDashoffset={`${2 * Math.PI * 45 * (1 - holdProgress)}`}
             className="transition-all duration-75 ease-out"
@@ -107,12 +107,11 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders }: HoldButtonProps) 
       {/* Main button */}
       <button
         className={cn(
-          "relative w-48 h-48 rounded-full transition-all duration-300 ease-out",
+          "relative w-48 h-48 rounded-full transition-all duration-200 ease-out",
           "bg-gradient-to-br shadow-2xl",
           "active:shadow-lg select-none touch-none",
           "flex items-center justify-center",
-          "border-2 border-white/20",
-          getButtonGradient(),
+          getButtonColor(),
           getButtonScale()
         )}
         onMouseDown={startHold}
@@ -126,30 +125,25 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders }: HoldButtonProps) 
           {isActivated ? (
             <div className="animate-fade-in">
               <div className="text-2xl font-bold mb-1">LIVE</div>
-              <div className="text-sm opacity-90">Hold to connect</div>
+              <div className="text-sm opacity-80">Hold to connect</div>
             </div>
           ) : isPressed ? (
             <div className="animate-scale-in">
               <div className="text-xl font-bold mb-1">
                 {Math.ceil(3 - (holdProgress * 3))}
               </div>
-              <div className="text-sm opacity-90">Keep holding...</div>
+              <div className="text-sm opacity-80">Keep holding...</div>
             </div>
           ) : (
             <div>
               <div className="text-xl font-bold mb-1">HOLD</div>
-              <div className="text-sm opacity-90">Press & hold for 3s</div>
+              <div className="text-sm opacity-80">Press & hold for 3s</div>
             </div>
           )}
         </div>
 
-        {/* Inner highlight with subtle ripple effect */}
-        <div className="absolute inset-3 rounded-full bg-white/10 backdrop-blur-sm" />
-        
-        {/* Ripple effect when pressed */}
-        {isPressed && (
-          <div className="absolute inset-0 rounded-full bg-sky-blue/20 animate-ping" />
-        )}
+        {/* Inner highlight */}
+        <div className="absolute inset-2 rounded-full bg-white/10" />
       </button>
     </div>
   );

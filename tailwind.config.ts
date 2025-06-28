@@ -62,15 +62,7 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				},
-				// Custom app colors
-				'indigo-blue': '#3F51B5',
-				'sky-blue': '#81D4FA',
-				'soft-purple': '#9575CD',
-				'mint-green': '#AED581',
-				'warm-coral': '#FF7043',
-				'light-gray': '#ECEFF1',
-				'dark-gray': '#263238'
+				}
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -113,22 +105,13 @@ export default {
 						transform: 'scale(1)',
 						opacity: '1'
 					}
-				},
-				'pulse-gentle': {
-					'0%, 100%': {
-						opacity: '1'
-					},
-					'50%': {
-						opacity: '0.8'
-					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'fade-in': 'fade-in 0.3s ease-out',
-				'scale-in': 'scale-in 0.2s ease-out',
-				'pulse-gentle': 'pulse-gentle 2s ease-in-out infinite'
+				'scale-in': 'scale-in 0.2s ease-out'
 			}
 		}
 	},
