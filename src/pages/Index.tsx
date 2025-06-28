@@ -1,11 +1,10 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { Users, TrendingUp, BarChart3, User } from 'lucide-react';
 import HoldButton from '../components/HoldButton';
 import Navigation from '../components/Navigation';
 import Statistics from '../components/Statistics';
 import Profile from '../components/Profile';
-import Polls from '../components/Polls';
-import Create from '../components/Create';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('main');
@@ -30,10 +29,6 @@ const Index = () => {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'polls':
-        return <Polls />;
-      case 'create':
-        return <Create />;
       case 'statistics':
         return <Statistics />;
       case 'profile':
@@ -42,10 +37,10 @@ const Index = () => {
         return (
           <div className="flex-1 flex flex-col items-center justify-center px-6">
             <div className="text-center mb-12">
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-blue to-soft-purple bg-clip-text text-transparent mb-4">
                 Hold Together
               </h1>
-              <p className="text-gray-600 text-lg max-w-md">
+              <p className="text-dark-gray dark:text-light-gray text-lg max-w-md">
                 Hold the button for 3 seconds to see how many people around the world are holding with you
               </p>
             </div>
@@ -58,11 +53,11 @@ const Index = () => {
 
             {isHolding && globalHolders > 0 && (
               <div className="mt-8 text-center animate-fade-in">
-                <div className="bg-white/20 backdrop-blur-sm rounded-2xl px-8 py-6 border border-white/30">
-                  <div className="text-3xl font-bold text-white mb-2 animate-pulse">
+                <div className="bg-sky-blue/20 backdrop-blur-sm rounded-2xl px-8 py-6 border border-sky-blue/30 animate-pulse-gentle">
+                  <div className="text-3xl font-bold text-dark-gray dark:text-white mb-2">
                     {globalHolders}
                   </div>
-                  <div className="text-white/80 text-sm">
+                  <div className="text-dark-gray/70 dark:text-white/80 text-sm">
                     {globalHolders === 1 ? 'person is' : 'people are'} holding with you
                   </div>
                 </div>
@@ -74,7 +69,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-blue via-soft-purple to-sky-blue relative overflow-hidden">
       <div className="relative z-10 flex flex-col h-screen">
         {renderContent()}
         
