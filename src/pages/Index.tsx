@@ -81,20 +81,18 @@ const Index = () => {
         <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
       </div>
       
-      <style>
-        {`
-          @keyframes heartbeat {
-            0%, 100% { 
-              transform: scale(1.5); 
-              opacity: 0.3; 
-            }
-            50% { 
-              transform: scale(1.7); 
-              opacity: 0.1; 
-            }
+      <style jsx>{`
+        @keyframes heartbeat {
+          0%, 100% { 
+            transform: scale(1.5); 
+            opacity: 0.3; 
           }
-        `}
-      </style>
+          50% { 
+            transform: scale(1.7); 
+            opacity: 0.1; 
+          }
+        }
+      `}</style>
     </div>
   );
 };
