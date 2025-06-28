@@ -70,13 +70,9 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders }: HoldButtonProps) 
 
   return (
     <div className="relative">
-      {/* Outer glow effect with heartbeat animation */}
+      {/* Outer glow effect */}
       {isActivated && (
-        <div className="absolute inset-0 rounded-full bg-green-400/30 animate-pulse scale-150" 
-             style={{ 
-               animation: 'heartbeat 1.2s ease-in-out infinite',
-               animationDelay: '0s'
-             }} />
+        <div className="absolute inset-0 rounded-full bg-green-400/30 animate-ping scale-150" />
       )}
       
       {/* Progress ring */}

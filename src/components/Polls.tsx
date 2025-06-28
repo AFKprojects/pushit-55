@@ -2,11 +2,7 @@
 import { useState } from 'react';
 import { TrendingUp, Users, Clock } from 'lucide-react';
 
-interface PollsProps {
-  onNavigateToCreate?: () => void;
-}
-
-const Polls = ({ onNavigateToCreate }: PollsProps) => {
+const Polls = () => {
   const [polls] = useState([
     {
       id: 1,
@@ -97,11 +93,8 @@ const Polls = ({ onNavigateToCreate }: PollsProps) => {
         </div>
 
         <div className="mt-8 text-center">
-          <button 
-            onClick={onNavigateToCreate}
-            className="bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl px-6 py-3 border border-white/30 text-white font-medium transition-colors"
-          >
-            Create Your Poll
+          <button className="bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl px-6 py-3 border border-white/30 text-white font-medium transition-colors">
+            Create New Poll
           </button>
         </div>
       </div>
