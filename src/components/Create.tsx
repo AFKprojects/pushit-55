@@ -39,31 +39,31 @@ const Create = () => {
     <div className="flex-1 px-6 py-8 overflow-y-auto">
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-400 to-yellow-500 bg-clip-text text-transparent mb-2">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
             Create Your Poll
           </h1>
-          <p className="text-gray-300">
-            Ask the HIVE community what they think
+          <p className="text-gray-600">
+            Ask the holding community what they think
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-6 border border-orange-500/30">
-            <label className="block text-orange-200 font-medium mb-3">
+          <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-6 border border-white/30">
+            <label className="block text-white font-medium mb-3">
               Poll Question
             </label>
             <Textarea
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               placeholder="What would you like to ask the community?"
-              className="bg-black/20 border-orange-500/20 text-orange-200 placeholder:text-orange-300/60 resize-none"
+              className="bg-white/10 border-white/20 text-white placeholder:text-white/60 resize-none"
               rows={3}
             />
           </div>
 
-          <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-6 border border-orange-500/30">
+          <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-6 border border-white/30">
             <div className="flex items-center justify-between mb-4">
-              <label className="block text-orange-200 font-medium">
+              <label className="block text-white font-medium">
                 Answer Options
               </label>
               <Button
@@ -71,7 +71,7 @@ const Create = () => {
                 onClick={addOption}
                 disabled={options.length >= 6}
                 size="sm"
-                className="bg-black/20 hover:bg-black/40 text-orange-200 border-orange-500/20"
+                className="bg-white/10 hover:bg-white/20 text-white border-white/20"
                 variant="outline"
               >
                 <Plus size={16} className="mr-1" />
@@ -88,7 +88,7 @@ const Create = () => {
                       value={option}
                       onChange={(e) => updateOption(index, e.target.value)}
                       placeholder={`Option ${index + 1}`}
-                      className="w-full bg-black/20 border border-orange-500/20 rounded-lg px-4 py-3 text-orange-200 placeholder:text-orange-300/60 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                      className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder:text-white/60 focus:outline-none focus:ring-2 focus:ring-blue-400"
                     />
                   </div>
                   {options.length > 2 && (
@@ -107,14 +107,14 @@ const Create = () => {
             </div>
           </div>
 
-          <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-6 border border-orange-500/30">
-            <label className="block text-orange-200 font-medium mb-3">
+          <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-6 border border-white/30">
+            <label className="block text-white font-medium mb-3">
               Poll Duration
             </label>
             <select
               value={duration}
               onChange={(e) => setDuration(e.target.value)}
-              className="w-full bg-black/20 border border-orange-500/20 rounded-lg px-4 py-3 text-orange-200 focus:outline-none focus:ring-2 focus:ring-orange-400"
+              className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
             >
               <option value="1" className="bg-gray-800">1 day</option>
               <option value="3" className="bg-gray-800">3 days</option>
@@ -128,7 +128,7 @@ const Create = () => {
             <Button
               type="button"
               variant="outline"
-              className="flex-1 bg-black/20 hover:bg-black/40 text-orange-200 border-orange-500/20"
+              className="flex-1 bg-white/10 hover:bg-white/20 text-white border-white/20"
               onClick={() => {
                 setQuestion('');
                 setOptions(['', '']);
@@ -140,7 +140,7 @@ const Create = () => {
             <Button
               type="submit"
               disabled={!isValid}
-              className="flex-1 bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-black font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Create Poll
             </Button>

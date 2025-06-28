@@ -57,9 +57,9 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders }: HoldButtonProps) 
   }, []);
 
   const getButtonColor = () => {
-    if (isActivated) return 'from-orange-400 to-yellow-500';
-    if (isPressed) return 'from-yellow-500 to-orange-600';
-    return 'from-orange-500 to-yellow-600';
+    if (isActivated) return 'from-green-400 to-emerald-500';
+    if (isPressed) return 'from-yellow-400 to-orange-500';
+    return 'from-blue-500 to-purple-600';
   };
 
   const getButtonScale = () => {
@@ -72,7 +72,7 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders }: HoldButtonProps) 
     <div className="relative">
       {/* Outer glow effect with heartbeat animation */}
       {isActivated && (
-        <div className="absolute inset-0 rounded-full bg-orange-400/30 animate-pulse scale-150" 
+        <div className="absolute inset-0 rounded-full bg-green-400/30 animate-pulse scale-150" 
              style={{ 
                animation: 'heartbeat 1.2s ease-in-out infinite',
                animationDelay: '0s'
@@ -90,7 +90,7 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders }: HoldButtonProps) 
             cy="50"
             r="45"
             fill="none"
-            stroke="orange"
+            stroke="white"
             strokeWidth="2"
             strokeOpacity="0.3"
           />
@@ -99,7 +99,7 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders }: HoldButtonProps) 
             cy="50"
             r="45"
             fill="none"
-            stroke="orange"
+            stroke="white"
             strokeWidth="2"
             strokeDasharray={`${2 * Math.PI * 45}`}
             strokeDashoffset={`${2 * Math.PI * 45 * (1 - holdProgress)}`}
@@ -125,7 +125,7 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders }: HoldButtonProps) 
         onTouchEnd={endHold}
         style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
       >
-        <div className="text-black text-center">
+        <div className="text-white text-center">
           {isActivated ? (
             <div className="animate-fade-in">
               <div className="text-2xl font-bold mb-1">LIVE</div>
