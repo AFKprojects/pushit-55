@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Users, TrendingUp, BarChart3, User } from 'lucide-react';
 import HoldButton from '../components/HoldButton';
@@ -6,6 +5,7 @@ import Navigation from '../components/Navigation';
 import Statistics from '../components/Statistics';
 import Profile from '../components/Profile';
 import Polls from '../components/Polls';
+import Create from '../components/Create';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('main');
@@ -32,6 +32,8 @@ const Index = () => {
     switch (activeTab) {
       case 'polls':
         return <Polls />;
+      case 'create':
+        return <Create />;
       case 'statistics':
         return <Statistics />;
       case 'profile':
