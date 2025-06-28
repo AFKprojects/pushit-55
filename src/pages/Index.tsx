@@ -42,8 +42,8 @@ const Index = () => {
         return (
           <div className="flex-1 flex flex-col items-center justify-center px-6 relative">
             <div className="text-center mb-12">
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-400 to-yellow-500 bg-clip-text text-transparent mb-4">
-                HIVE
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-cyan-500 bg-clip-text text-transparent mb-4">
+                ButtonApp
               </h1>
               <p className="text-gray-300 text-lg max-w-md">
                 Hold the button for 3 seconds to see how many people around the world are holding with you
@@ -60,11 +60,11 @@ const Index = () => {
               {/* Absolute positioned counter overlay */}
               {isHolding && globalHolders > 0 && (
                 <div className="absolute -top-24 left-1/2 transform -translate-x-1/2">
-                  <div className="bg-black/40 backdrop-blur-sm rounded-2xl px-8 py-6 border border-orange-500/30 whitespace-nowrap">
-                    <div className="text-3xl font-bold text-orange-400 mb-2 animate-pulse text-center">
+                  <div className="bg-black/40 backdrop-blur-sm rounded-2xl px-8 py-6 border border-blue-500/30 whitespace-nowrap">
+                    <div className="text-3xl font-bold text-blue-400 mb-2 animate-pulse text-center">
                       {globalHolders}
                     </div>
-                    <div className="text-orange-200 text-sm text-center">
+                    <div className="text-blue-200 text-sm text-center">
                       {globalHolders === 1 ? 'person is' : 'people are'} holding with you
                     </div>
                   </div>
@@ -77,7 +77,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-orange-900 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-blue-900 relative overflow-hidden">
       <div className="relative z-10 flex flex-col h-screen">
         {renderContent()}
         

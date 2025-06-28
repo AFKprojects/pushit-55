@@ -17,7 +17,7 @@ const Navigation = ({ activeTab, onTabChange }: NavigationProps) => {
   ];
 
   return (
-    <div className="bg-black/30 backdrop-blur-md border-t border-orange-500/20 px-4 py-2">
+    <div className="bg-black/30 backdrop-blur-md border-t border-blue-500/20 px-4 py-2">
       <div className="flex justify-around max-w-md mx-auto">
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -31,8 +31,8 @@ const Navigation = ({ activeTab, onTabChange }: NavigationProps) => {
                 "flex flex-col items-center py-2 px-3 rounded-lg transition-all duration-200",
                 "min-w-[60px]",
                 isActive 
-                  ? "bg-orange-500/20 text-orange-400" 
-                  : "text-orange-200/70 hover:text-orange-200 hover:bg-orange-500/10"
+                  ? "bg-blue-500/20 text-blue-400" 
+                  : "text-blue-200/70 hover:text-blue-200 hover:bg-blue-500/10"
               )}
             >
               <Icon size={20} className="mb-1" />
