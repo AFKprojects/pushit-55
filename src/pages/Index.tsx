@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import HoldButton from '../components/HoldButton';
 import Navigation from '../components/Navigation';
@@ -11,6 +10,12 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState('main');
   const [globalHolders, setGlobalHolders] = useState(0);
   const [isHolding, setIsHolding] = useState(false);
+
+  // Ensure consistent dark theme appearance
+  useEffect(() => {
+    document.body.style.backgroundColor = '#000';
+    document.documentElement.style.backgroundColor = '#000';
+  }, []);
 
   // Simulate real-time global counter updates
   useEffect(() => {
@@ -77,7 +82,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-blue-900 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-blue-900 relative overflow-hidden" style={{ backgroundColor: '#000' }}>
       <div className="relative z-10 flex flex-col h-screen">
         {renderContent()}
         
