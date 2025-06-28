@@ -5,6 +5,7 @@ import HoldButton from '../components/HoldButton';
 import Navigation from '../components/Navigation';
 import Statistics from '../components/Statistics';
 import Profile from '../components/Profile';
+import Polls from '../components/Polls';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('main');
@@ -29,6 +30,8 @@ const Index = () => {
 
   const renderContent = () => {
     switch (activeTab) {
+      case 'polls':
+        return <Polls />;
       case 'statistics':
         return <Statistics />;
       case 'profile':
