@@ -59,7 +59,7 @@ const Index = () => {
 
               {/* Absolute positioned counter overlay */}
               {isHolding && globalHolders > 0 && (
-                <div className="absolute -top-24 left-1/2 transform -translate-x-1/2 animate-fade-in">
+                <div className="absolute -top-24 left-1/2 transform -translate-x-1/2">
                   <div className="bg-black/40 backdrop-blur-sm rounded-2xl px-8 py-6 border border-orange-500/30 whitespace-nowrap">
                     <div className="text-3xl font-bold text-orange-400 mb-2 animate-pulse text-center">
                       {globalHolders}
