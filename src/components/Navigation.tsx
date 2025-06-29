@@ -1,4 +1,5 @@
 
+
 import { BarChart3, Users, Plus, TrendingUp, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -10,7 +11,7 @@ interface NavigationProps {
 const Navigation = ({ activeTab, onTabChange }: NavigationProps) => {
   const tabs = [
     { id: 'main', icon: Users, label: 'Main' },
-    { id: 'polls', icon: TrendingUp, label: 'Polls' },
+    { id: 'polls', icon: TrendingUp, label: 'Vote' },
     { id: 'create', icon: Plus, label: 'Create' },
     { id: 'statistics', icon: BarChart3, label: 'Stats' },
     { id: 'myapp', icon: User, label: 'My App' },
@@ -46,3 +47,4 @@ const Navigation = ({ activeTab, onTabChange }: NavigationProps) => {
 };
 
 export default Navigation;
+
