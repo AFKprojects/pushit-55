@@ -1,105 +1,31 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
-interface ButtonHold {
-  id: string;
-  user_id: string | null;
-  started_at: string;
-  ended_at: string | null;
-  duration_seconds: number | null;
-  is_active: boolean;
-}
-
-interface ActiveHold {
-  id: string;
-  startTime: number;
-  userId?: string;
-}
-
 export const useButtonHolds = () => {
-  const [activeHolds, setActiveHolds] = useState<ActiveHold[]>([]);
-  const [totalActiveHolds, setTotalActiveHolds] = useState(0);
-  const [currentHold, setCurrentHold] = useState<string | null>(null);
+  const [activeHolders, setActiveHolders] = useState(0);
+  const [currentHoldId, setCurrentHoldId] = useState<string | null>(null);
   const { user } = useAuth();
-  const holdStartTime = useRef<number | null>(null);
-
-  const startHold = async () => {
-    if (currentHold) return currentHold;
-
-    const startTime = Date.now();
-    holdStartTime.current = startTime;
-
-    try {
-      const { data, error } = await supabase
-        .from('button_holds')
-        .insert({
-          user_id: user?.id || null,
-          started_at: new Date().toISOString(),
-          is_active: true
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      setCurrentHold(data.id);
-      return data.id;
-    } catch (error) {
-      console.error('Error starting hold:', error);
-      return null;
-    }
-  };
-
-  const endHold = async (holdId: string) => {
-    if (!holdStartTime.current) return;
-
-    const endTime = Date.now();
-    const duration = Math.round((endTime - holdStartTime.current) / 1000);
-
-    try {
-      const { error } = await supabase
-        .from('button_holds')
-        .update({
-          ended_at: new Date().toISOString(),
-          duration_seconds: duration,
-          is_active: false
-        })
-        .eq('id', holdId);
-
-      if (error) throw error;
-
-      setCurrentHold(null);
-      holdStartTime.current = null;
-    } catch (error) {
-      console.error('Error ending hold:', error);
-    }
-  };
-
-  const fetchActiveHolds = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('button_holds')
-        .select('*')
-        .eq('is_active', true);
-
-      if (error) throw error;
-
-      const holds = (data || []).map(hold => ({
-        id: hold.id,
-        startTime: new Date(hold.started_at).getTime(),
-        userId: hold.user_id
-      }));
-
-      setActiveHolds(holds);
-      setTotalActiveHolds(holds.length);
-    } catch (error) {
-      console.error('Error fetching active holds:', error);
-    }
-  };
 
   useEffect(() => {
+    if (!user) {
+      setActiveHolders(0);
+      return;
+    }
+
+    // Fetch initial active holds count
+    const fetchActiveHolds = async () => {
+      const { data, error } = await supabase
+        .from('button_holds')
+        .select('id')
+        .eq('is_active', true);
+      
+      if (!error && data) {
+        setActiveHolders(data.length);
+      }
+    };
+
     fetchActiveHolds();
 
     // Set up real-time subscription
@@ -109,8 +35,7 @@ export const useButtonHolds = () => {
         event: '*',
         schema: 'public',
         table: 'button_holds'
-      }, (payload) => {
-        console.log('Button hold change:', payload);
+      }, () => {
         fetchActiveHolds();
       })
       .subscribe();
@@ -118,12 +43,53 @@ export const useButtonHolds = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [user]);
+
+  const startHold = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('button_holds')
+        .insert({
+          user_id: user.id,
+          is_active: true
+        })
+        .select()
+        .single();
+
+      if (!error && data) {
+        setCurrentHoldId(data.id);
+      }
+    } catch (error) {
+      console.error('Error starting hold:', error);
+    }
+  };
+
+  const endHold = async () => {
+    if (!user || !currentHoldId) return;
+
+    try {
+      const startTime = new Date();
+      const { error } = await supabase
+        .from('button_holds')
+        .update({
+          ended_at: new Date().toISOString(),
+          is_active: false,
+          duration_seconds: Math.floor((Date.now() - startTime.getTime()) / 1000)
+        })
+        .eq('id', currentHoldId);
+
+      if (!error) {
+        setCurrentHoldId(null);
+      }
+    } catch (error) {
+      console.error('Error ending hold:', error);
+    }
+  };
 
   return {
-    activeHolds,
-    totalActiveHolds,
-    currentHold,
+    activeHolders,
     startHold,
     endHold
   };

@@ -6,11 +6,17 @@ import Statistics from '../components/Statistics';
 import Polls from '../components/Polls';
 import Create from '../components/Create';
 import MyApp from '../components/MyApp';
+import { useAuth } from '../hooks/useAuth';
+import { useButtonHolds } from '../hooks/useButtonHolds';
+import { Button } from '@/components/ui/button';
+import { LogIn } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('main');
-  const [globalHolders, setGlobalHolders] = useState(0);
-  const [isHolding, setIsHolding] = useState(false);
+  const { user } = useAuth();
+  const { activeHolders, startHold, endHold } = useButtonHolds();
+  const navigate = useNavigate();
 
   // Ensure consistent dark theme appearance
   useEffect(() => {
@@ -20,21 +26,17 @@ const Index = () => {
     document.documentElement.classList.remove('dark');
   }, []);
 
-  // Simulate real-time global counter updates
-  useEffect(() => {
-    if (isHolding) {
-      const interval = setInterval(() => {
-        // Simulate fluctuating number of global holders
-        const baseCount = Math.floor(Math.random() * 50) + 10;
-        const variation = Math.floor(Math.random() * 10) - 5;
-        setGlobalHolders(Math.max(1, baseCount + variation));
-      }, 500);
-
-      return () => clearInterval(interval);
-    } else {
-      setGlobalHolders(0);
+  const handleHoldStart = () => {
+    if (user) {
+      startHold();
     }
-  }, [isHolding]);
+  };
+
+  const handleHoldEnd = () => {
+    if (user) {
+      endHold();
+    }
+  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -53,33 +55,56 @@ const Index = () => {
       default:
         return (
           <div className="flex-1 flex flex-col items-center justify-center px-6 relative">
+            {!user && (
+              <div className="absolute top-6 right-6">
+                <Button
+                  onClick={() => navigate('/auth')}
+                  className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-medium"
+                >
+                  <LogIn size={18} className="mr-2" />
+                  Zaloguj się
+                </Button>
+              </div>
+            )}
+
             <div className="text-center mb-12">
               <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-400 to-yellow-500 bg-clip-text text-transparent mb-4">
                 Push It!
               </h1>
               <p className="text-gray-300 text-lg max-w-md">
-                Hold the button for 3 seconds to see how many people around the world are pushing it with you
+                {user 
+                  ? "Przytrzymaj przycisk przez 3 sekundy aby zobaczyć ile osób na świecie robi to samo co Ty"
+                  : "Zaloguj się aby dołączyć do globalnej społeczności Push It!"
+                }
               </p>
             </div>
 
             <div className="relative">
               <HoldButton 
-                onHoldStart={() => setIsHolding(true)}
-                onHoldEnd={() => setIsHolding(false)}
-                globalHolders={globalHolders}
+                onHoldStart={handleHoldStart}
+                onHoldEnd={handleHoldEnd}
+                globalHolders={activeHolders}
               />
 
               {/* Absolute positioned counter overlay */}
-              {isHolding && globalHolders > 0 && (
+              {user && activeHolders > 0 && (
                 <div className="absolute -top-24 left-1/2 transform -translate-x-1/2">
                   <div className="bg-black/40 backdrop-blur-sm rounded-2xl px-8 py-6 border border-orange-500/30 whitespace-nowrap">
                     <div className="text-3xl font-bold text-orange-400 mb-2 animate-pulse text-center">
-                      {globalHolders}
+                      {activeHolders}
                     </div>
                     <div className="text-orange-200 text-sm text-center">
-                      {globalHolders === 1 ? 'person is' : 'people are'} pushing with you
+                      {activeHolders === 1 ? 'osoba przytrzymuje' : 'osób przytrzymuje'} razem z Tobą
                     </div>
                   </div>
+                </div>
+              )}
+
+              {!user && (
+                <div className="absolute -bottom-16 left-1/2 transform -translate-x-1/2 text-center">
+                  <p className="text-orange-300/70 text-sm">
+                    Zaloguj się aby uczestniczyć w globalnym doświadczeniu
+                  </p>
                 </div>
               )}
             </div>

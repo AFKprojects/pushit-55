@@ -1,13 +1,24 @@
-import { useState } from 'react';
-import { Users, BarChart3, Clock, Vote, Archive, BookmarkPlus, Eye, TrendingUp, User, Settings, ChevronDown, ChevronRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Users, BarChart3, Clock, Vote, Archive, BookmarkPlus, Eye, TrendingUp, User, Settings, ChevronDown, ChevronRight, LogIn } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 
 interface Poll {
-  id: number;
+  id: string;
   question: string;
-  votes: number;
-  status: 'live' | 'archive';
+  total_votes: number;
+  status: 'active' | 'archived';
   timeLeft?: string;
+  expires_at: string;
+}
+
+interface UserStats {
+  createdPolls: number;
+  totalVotes: number;
+  observers: number;
 }
 
 const MyApp = () => {
@@ -16,42 +27,141 @@ const MyApp = () => {
   const [profileTab, setProfileTab] = useState('account');
   const [liveExpanded, setLiveExpanded] = useState(true);
   const [archiveExpanded, setArchiveExpanded] = useState(false);
+  const [createdPolls, setCreatedPolls] = useState<Poll[]>([]);
+  const [votedPolls, setVotedPolls] = useState<Poll[]>([]);
+  const [savedPolls, setSavedPolls] = useState<Poll[]>([]);
+  const [userStats, setUserStats] = useState<UserStats>({ createdPolls: 0, totalVotes: 0, observers: 0 });
+  const [loading, setLoading] = useState(true);
+  
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
-  // Mock data
-  const [createdPolls] = useState<Poll[]>([
-    { id: 1, question: "Best time to push?", votes: 89, status: 'live', timeLeft: '2 days left' },
-    { id: 2, question: "Favorite push duration?", votes: 156, status: 'live', timeLeft: '5h left' },
-    { id: 3, question: "Best button color?", votes: 67, status: 'archive' },
-    { id: 4, question: "Morning vs evening?", votes: 234, status: 'archive' },
-    { id: 5, question: "Preferred style?", votes: 89, status: 'archive' },
-  ]);
+  useEffect(() => {
+    if (user) {
+      fetchUserData();
+    } else {
+      setLoading(false);
+    }
+  }, [user]);
 
-  const [votedPolls] = useState<Poll[]>([
-    { id: 4, question: "Morning or evening sessions?", votes: 234, status: 'archive' },
-    { id: 5, question: "Preferred interaction style?", votes: 189, status: 'archive' },
-  ]);
+  const fetchUserData = async () => {
+    if (!user) return;
 
-  const [toVotePolls] = useState<Poll[]>([
-    { id: 6, question: "What motivates you to push?", votes: 45, status: 'live', timeLeft: '12 mins left' },
-    { id: 7, question: "Ideal session length?", votes: 78, status: 'live', timeLeft: '1 day left' },
-  ]);
+    try {
+      // Fetch created polls
+      const { data: created } = await supabase
+        .from('polls')
+        .select('id, question, total_votes, status, expires_at')
+        .eq('created_by', user.id)
+        .order('created_at', { ascending: false });
+
+      // Fetch voted polls
+      const { data: voted } = await supabase
+        .from('user_votes')
+        .select(`
+          poll_id,
+          polls!inner(id, question, total_votes, status, expires_at)
+        `)
+        .eq('user_id', user.id);
+
+      // Fetch saved polls
+      const { data: saved } = await supabase
+        .from('saved_polls')
+        .select(`
+          poll_id,
+          polls!inner(id, question, total_votes, status, expires_at)
+        `)
+        .eq('user_id', user.id);
+
+      // Calculate time left for polls
+      const calculateTimeLeft = (expiresAt: string) => {
+        const now = new Date();
+        const expiry = new Date(expiresAt);
+        const diff = expiry.getTime() - now.getTime();
+        
+        if (diff <= 0) return "Zakończone";
+        
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        
+        if (days > 0) return `${days} dni`;
+        if (hours > 0) return `${hours}h`;
+        
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        return `${minutes}min`;
+      };
+
+      const processPolls = (polls: any[]) => 
+        polls?.map(poll => ({
+          ...poll,
+          timeLeft: calculateTimeLeft(poll.expires_at),
+          status: new Date(poll.expires_at) < new Date() ? 'archived' : poll.status
+        })) || [];
+
+      setCreatedPolls(processPolls(created || []));
+      setVotedPolls(processPolls(voted?.map(v => v.polls) || []));
+      setSavedPolls(processPolls(saved?.map(s => s.polls) || []));
+
+      // Calculate stats
+      const totalVotesReceived = (created || []).reduce((sum, poll) => sum + poll.total_votes, 0);
+      setUserStats({
+        createdPolls: created?.length || 0,
+        totalVotes: totalVotesReceived,
+        observers: Math.floor(Math.random() * 50) + 10 // Placeholder - w przyszłości można dodać system obserwujących
+      });
+
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!user) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center px-6">
+        <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-8 border border-blue-500/20 text-center max-w-sm">
+          <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <User size={32} className="text-white" />
+          </div>
+          
+          <h3 className="text-xl font-bold text-blue-200 mb-2">Dołącz do społeczności</h3>
+          <p className="text-blue-200/70 text-sm mb-6">
+            Utwórz konto aby zarządzać swoimi ankietami, śledzić statystyki i korzystać z pełnej funkcjonalności
+          </p>
+          
+          <Button 
+            onClick={() => navigate('/auth')}
+            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium py-3 rounded-xl mb-3 flex items-center justify-center gap-2"
+          >
+            <LogIn size={18} />
+            Zaloguj się / Zarejestruj
+          </Button>
+          
+          <p className="text-blue-200/50 text-xs">
+            Kontynuuj jako gość aby używać podstawowych funkcji
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const sections = [
-    { id: 'mysubjects', label: 'My Subjects', icon: BarChart3 },
-    { id: 'community', label: 'Community', icon: Users },
-    { id: 'profile', label: 'Profile', icon: User },
+    { id: 'mysubjects', label: 'Moje ankiety', icon: BarChart3 },
+    { id: 'community', label: 'Społeczność', icon: Users },
+    { id: 'profile', label: 'Profil', icon: User },
   ];
 
   const renderMySubjects = () => {
     const mySubjectsTabs = [
-      { id: 'created', label: 'Created' },
-      { id: 'voted', label: 'Voted' },
-      { id: 'tovote', label: 'To Vote' },
+      { id: 'created', label: 'Utworzone' },
+      { id: 'voted', label: 'Zagłosowane' },
+      { id: 'tovote', label: 'Do głosowania' },
     ];
 
     const renderCreatedPolls = () => {
-      const livePolls = createdPolls.filter(poll => poll.status === 'live');
-      const archivePolls = createdPolls.filter(poll => poll.status === 'archive');
+      const livePolls = createdPolls.filter(poll => poll.status === 'active');
+      const archivePolls = createdPolls.filter(poll => poll.status === 'archived');
 
       return (
         <div className="space-y-4">
@@ -63,10 +173,10 @@ const MyApp = () => {
             >
               <div className="flex items-center gap-2">
                 {liveExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                <span className="text-blue-200 font-medium">Live</span>
+                <span className="text-blue-200 font-medium">Aktywne</span>
                 <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
               </div>
-              <span className="text-blue-300/70 text-sm">{livePolls.length} active</span>
+              <span className="text-blue-300/70 text-sm">{livePolls.length} aktywnych</span>
             </button>
             
             {liveExpanded && (
@@ -75,7 +185,7 @@ const MyApp = () => {
                   <div key={poll.id} className="bg-black/20 rounded-lg p-4">
                     <h4 className="text-blue-200 font-medium mb-2">{poll.question}</h4>
                     <div className="flex justify-between items-center text-sm">
-                      <span className="text-blue-300/70">{poll.votes} votes</span>
+                      <span className="text-blue-300/70">{poll.total_votes} głosów</span>
                       {poll.timeLeft && (
                         <span className="text-green-400 flex items-center gap-1">
                           <Clock size={12} />
@@ -85,6 +195,9 @@ const MyApp = () => {
                     </div>
                   </div>
                 ))}
+                {livePolls.length === 0 && (
+                  <p className="text-blue-300/50 text-sm p-4">Brak aktywnych ankiet</p>
+                )}
               </div>
             )}
           </div>
@@ -97,9 +210,9 @@ const MyApp = () => {
             >
               <div className="flex items-center gap-2">
                 {archiveExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                <span className="text-blue-200 font-medium">Archive</span>
+                <span className="text-blue-200 font-medium">Archiwum</span>
               </div>
-              <span className="text-blue-300/70 text-sm">{archivePolls.length} ended</span>
+              <span className="text-blue-300/70 text-sm">{archivePolls.length} zakończonych</span>
             </button>
             
             {archiveExpanded && (
@@ -108,14 +221,17 @@ const MyApp = () => {
                   <div key={poll.id} className="bg-black/20 rounded-lg p-4">
                     <h4 className="text-blue-200 font-medium mb-2">{poll.question}</h4>
                     <div className="flex justify-between items-center text-sm">
-                      <span className="text-blue-300/70">{poll.votes} votes</span>
+                      <span className="text-blue-300/70">{poll.total_votes} głosów</span>
                       <span className="text-gray-400 flex items-center gap-1">
                         <Archive size={12} />
-                        Ended
+                        Zakończone
                       </span>
                     </div>
                   </div>
                 ))}
+                {archivePolls.length === 0 && (
+                  <p className="text-blue-300/50 text-sm p-4">Brak zakończonych ankiet</p>
+                )}
               </div>
             )}
           </div>
@@ -129,24 +245,27 @@ const MyApp = () => {
           <div key={poll.id} className="bg-black/20 rounded-lg p-4">
             <h4 className="text-blue-200 font-medium mb-2">{poll.question}</h4>
             <div className="flex justify-between items-center text-sm">
-              <span className="text-blue-300/70">{poll.votes} total votes</span>
+              <span className="text-blue-300/70">{poll.total_votes} głosów łącznie</span>
               <span className="text-green-400 flex items-center gap-1">
                 <Vote size={12} />
-                Voted
+                Zagłosowano
               </span>
             </div>
           </div>
         ))}
+        {votedPolls.length === 0 && (
+          <p className="text-blue-300/50 text-sm p-4">Nie zagłosowałeś jeszcze w żadnej ankiecie</p>
+        )}
       </div>
     );
 
     const renderToVotePolls = () => (
       <div className="space-y-3">
-        {toVotePolls.map((poll) => (
+        {savedPolls.map((poll) => (
           <div key={poll.id} className="bg-black/20 rounded-lg p-4">
             <h4 className="text-blue-200 font-medium mb-2">{poll.question}</h4>
             <div className="flex justify-between items-center text-sm">
-              <span className="text-blue-300/70">{poll.votes} votes</span>
+              <span className="text-blue-300/70">{poll.total_votes} głosów</span>
               <div className="flex items-center gap-2">
                 {poll.timeLeft && (
                   <span className="text-blue-400 flex items-center gap-1">
@@ -156,16 +275,23 @@ const MyApp = () => {
                 )}
                 <span className="text-yellow-400 flex items-center gap-1">
                   <BookmarkPlus size={12} />
-                  Saved
+                  Zapisane
                 </span>
               </div>
             </div>
           </div>
         ))}
+        {savedPolls.length === 0 && (
+          <p className="text-blue-300/50 text-sm p-4">Nie masz zapisanych ankiet</p>
+        )}
       </div>
     );
 
     const renderMySubjectsContent = () => {
+      if (loading) {
+        return <div className="text-center py-8 text-blue-300/70">Ładowanie...</div>;
+      }
+
       switch (mySubjectsTab) {
         case 'created':
           return renderCreatedPolls();
@@ -205,20 +331,20 @@ const MyApp = () => {
   const renderCommunity = () => (
     <div className="space-y-6">
       <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-blue-400 mb-2">Your Community</h2>
-        <p className="text-blue-200/70">See your impact and connections</p>
+        <h2 className="text-2xl font-bold text-blue-400 mb-2">Twoja społeczność</h2>
+        <p className="text-blue-200/70">Zobacz swój wpływ i połączenia</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-4 border border-blue-500/20 text-center">
           <Eye size={24} className="text-blue-400 mx-auto mb-2" />
-          <div className="text-2xl font-bold text-blue-400">127</div>
-          <div className="text-blue-300/60 text-sm">Observers</div>
+          <div className="text-2xl font-bold text-blue-400">{userStats.observers}</div>
+          <div className="text-blue-300/60 text-sm">Obserwujących</div>
         </div>
         <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-4 border border-blue-500/20 text-center">
           <Vote size={24} className="text-cyan-400 mx-auto mb-2" />
-          <div className="text-2xl font-bold text-blue-400">342</div>
-          <div className="text-blue-300/60 text-sm">Subject Votes</div>
+          <div className="text-2xl font-bold text-blue-400">{userStats.totalVotes}</div>
+          <div className="text-blue-300/60 text-sm">Głosów otrzymanych</div>
         </div>
       </div>
     </div>
@@ -226,8 +352,8 @@ const MyApp = () => {
 
   const renderProfile = () => {
     const profileTabs = [
-      { id: 'account', label: 'Account' },
-      { id: 'settings', label: 'Settings' },
+      { id: 'account', label: 'Konto' },
+      { id: 'settings', label: 'Ustawienia' },
     ];
 
     return (
@@ -255,23 +381,23 @@ const MyApp = () => {
               <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <User size={40} className="text-white" />
               </div>
-              <h2 className="text-xl font-bold text-blue-200">Welcome back!</h2>
-              <p className="text-blue-300/70">@username</p>
+              <h2 className="text-xl font-bold text-blue-200">Witaj ponownie!</h2>
+              <p className="text-blue-300/70">{user.email}</p>
             </div>
 
             <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-4 border border-blue-500/20">
               <div className="flex items-center gap-3 mb-3">
                 <BarChart3 size={20} className="text-blue-400" />
-                <span className="text-blue-200 font-medium">Your Stats</span>
+                <span className="text-blue-200 font-medium">Twoje statystyki</span>
               </div>
               <div className="grid grid-cols-2 gap-4 text-center">
                 <div>
-                  <div className="text-2xl font-bold text-blue-400">15</div>
-                  <div className="text-blue-300/60 text-sm">Subjects Created</div>
+                  <div className="text-2xl font-bold text-blue-400">{userStats.createdPolls}</div>
+                  <div className="text-blue-300/60 text-sm">Utworzonych ankiet</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-blue-400">342</div>
-                  <div className="text-blue-300/60 text-sm">Total Votes</div>
+                  <div className="text-2xl font-bold text-blue-400">{userStats.totalVotes}</div>
+                  <div className="text-blue-300/60 text-sm">Otrzymanych głosów</div>
                 </div>
               </div>
             </div>
@@ -283,42 +409,27 @@ const MyApp = () => {
             <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-4 border border-blue-500/20">
               <div className="flex items-center gap-3 mb-4">
                 <Settings size={20} className="text-blue-400" />
-                <span className="text-blue-200 font-medium">App Settings</span>
+                <span className="text-blue-200 font-medium">Ustawienia aplikacji</span>
               </div>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-blue-200">Notifications</span>
+                  <span className="text-blue-200">Powiadomienia</span>
                   <button className="w-12 h-6 bg-blue-500 rounded-full relative">
                     <div className="w-5 h-5 bg-white rounded-full absolute right-0.5 top-0.5"></div>
                   </button>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-blue-200">Dark Mode</span>
+                  <span className="text-blue-200">Tryb ciemny</span>
                   <button className="w-12 h-6 bg-blue-500 rounded-full relative">
                     <div className="w-5 h-5 bg-white rounded-full absolute right-0.5 top-0.5"></div>
                   </button>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-blue-200">Privacy Mode</span>
+                  <span className="text-blue-200">Tryb prywatny</span>
                   <button className="w-12 h-6 bg-gray-600 rounded-full relative">
                     <div className="w-5 h-5 bg-white rounded-full absolute left-0.5 top-0.5"></div>
                   </button>
                 </div>
-              </div>
-            </div>
-
-            <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-4 border border-blue-500/20">
-              <h3 className="text-blue-200 font-medium mb-3">Account Actions</h3>
-              <div className="space-y-2">
-                <button className="w-full text-left text-blue-200 hover:text-blue-400 py-2 px-3 rounded hover:bg-black/20 transition-colors">
-                  Change Password
-                </button>
-                <button className="w-full text-left text-blue-200 hover:text-blue-400 py-2 px-3 rounded hover:bg-black/20 transition-colors">
-                  Export Data
-                </button>
-                <button className="w-full text-left text-red-400 hover:text-red-300 py-2 px-3 rounded hover:bg-black/20 transition-colors">
-                  Delete Account
-                </button>
               </div>
             </div>
           </div>
