@@ -36,24 +36,12 @@ const Index = () => {
     }
   }, [isHolding]);
 
-  const handleSavePollToVote = (pollId: number) => {
-    console.log(`Saving poll ${pollId} to "To Vote" list`);
-    // Here you would typically save to state management or backend
-  };
-
-  const handleHidePoll = (pollId: number) => {
-    console.log(`Hiding poll ${pollId}`);
-    // Here you would typically update state management or backend
-  };
-
   const renderContent = () => {
     switch (activeTab) {
       case 'polls':
         return (
           <Polls 
             onNavigateToCreate={() => setActiveTab('create')}
-            onSavePollToVote={handleSavePollToVote}
-            onHidePoll={handleHidePoll}
           />
         );
       case 'create':
