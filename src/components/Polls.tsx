@@ -56,6 +56,7 @@ const Polls = ({ onNavigateToCreate, onSavePollToVote, onHidePoll }: PollsProps)
   const [showSwipeHint, setShowSwipeHint] = useState(true);
   const [votingOption, setVotingOption] = useState<{pollId: number, optionIndex: number} | null>(null);
   const [votingProgress, setVotingProgress] = useState(0);
+  const [countdownSeconds, setCountdownSeconds] = useState(0);
   const startX = useRef(0);
   const isDragging = useRef(false);
   const votingTimer = useRef<NodeJS.Timeout | null>(null);
@@ -65,6 +66,7 @@ const Polls = ({ onNavigateToCreate, onSavePollToVote, onHidePoll }: PollsProps)
     
     setVotingOption({ pollId, optionIndex });
     setVotingProgress(0);
+    setCountdownSeconds(3);
     
     const interval = setInterval(() => {
       setVotingProgress(prev => {
@@ -76,6 +78,17 @@ const Polls = ({ onNavigateToCreate, onSavePollToVote, onHidePoll }: PollsProps)
         return prev + (100 / 30); // 3 seconds = 30 intervals of 100ms
       });
     }, 100);
+
+    // Countdown timer
+    const countdownInterval = setInterval(() => {
+      setCountdownSeconds(prev => {
+        if (prev <= 1) {
+          clearInterval(countdownInterval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
     
     votingTimer.current = interval;
   };
@@ -87,6 +100,7 @@ const Polls = ({ onNavigateToCreate, onSavePollToVote, onHidePoll }: PollsProps)
     }
     setVotingOption(null);
     setVotingProgress(0);
+    setCountdownSeconds(0);
   };
 
   const handleVoteComplete = (pollId: number, optionIndex: number) => {
@@ -281,6 +295,15 @@ const Polls = ({ onNavigateToCreate, onSavePollToVote, onHidePoll }: PollsProps)
                             className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-yellow-500/20 transition-all duration-100"
                             style={{ width: `${votingProgress}%` }}
                           />
+                        )}
+                        
+                        {/* Countdown timer */}
+                        {isVoting && countdownSeconds > 0 && (
+                          <div className="absolute inset-0 flex items-center justify-center z-20">
+                            <div className="bg-orange-500 text-white rounded-full w-16 h-16 flex items-center justify-center text-2xl font-bold animate-pulse">
+                              {countdownSeconds}
+                            </div>
+                          </div>
                         )}
                         
                         <div className="relative z-10">

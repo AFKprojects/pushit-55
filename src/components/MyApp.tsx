@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Users, BarChart3, Clock, Vote, Archive, BookmarkPlus, Eye, TrendingUp, User, Settings, ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -220,18 +219,6 @@ const MyApp = () => {
           <Vote size={24} className="text-cyan-400 mx-auto mb-2" />
           <div className="text-2xl font-bold text-blue-400">342</div>
           <div className="text-blue-300/60 text-sm">Subject Votes</div>
-        </div>
-      </div>
-
-      <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-4 border border-blue-500/20">
-        <h3 className="text-blue-200 font-medium mb-3 flex items-center gap-2">
-          <TrendingUp size={20} className="text-blue-400" />
-          Recent Activity
-        </h3>
-        <div className="space-y-2 text-blue-300/70 text-sm">
-          <p>• 12 new observers this week</p>
-          <p>• Your subject got 67 new votes</p>
-          <p>• 3 people commented on your subjects</p>
         </div>
       </div>
     </div>
