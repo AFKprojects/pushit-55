@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import HoldButton from '../components/HoldButton';
 import Navigation from '../components/Navigation';
@@ -97,14 +96,6 @@ const Index = () => {
                       {activeHolders === 1 ? 'person is holding' : 'people are holding'} together with you
                     </div>
                   </div>
-                </div>
-              )}
-
-              {!user && (
-                <div className="absolute -bottom-16 left-1/2 transform -translate-x-1/2 text-center">
-                  <p className="text-orange-300/70 text-sm">
-                    Log in to participate in the global experience
-                  </p>
                 </div>
               )}
             </div>

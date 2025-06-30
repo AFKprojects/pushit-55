@@ -20,9 +20,9 @@ const Profile = () => {
             <User size={32} className="text-white" />
           </div>
           
-          <h3 className="text-xl font-bold text-white mb-2">Dołącz do społeczności</h3>
+          <h3 className="text-xl font-bold text-white mb-2">Join the community</h3>
           <p className="text-white/70 text-sm mb-6">
-            Utwórz konto aby tworzyć ankiety, śledzić innych i odblokować funkcje premium
+            Create an account to create polls, follow others and unlock premium features
           </p>
           
           <Button 
@@ -30,11 +30,11 @@ const Profile = () => {
             className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-medium py-3 rounded-xl mb-3 flex items-center justify-center gap-2"
           >
             <LogIn size={18} />
-            Zaloguj się / Zarejestruj
+            Login / Register
           </Button>
           
           <p className="text-white/50 text-xs">
-            Kontynuuj jako gość aby używać podstawowych funkcji
+            Continue as guest to use basic features
           </p>
         </div>
       </div>
@@ -49,7 +49,7 @@ const Profile = () => {
           <div className="w-20 h-20 bg-gradient-to-r from-orange-500 to-yellow-600 rounded-full flex items-center justify-center mx-auto mb-4">
             <User size={40} className="text-white" />
           </div>
-          <h2 className="text-xl font-bold text-white">Witaj ponownie!</h2>
+          <h2 className="text-xl font-bold text-white">Welcome back!</h2>
           <p className="text-white/70">{user.email}</p>
         </div>
 
@@ -57,16 +57,16 @@ const Profile = () => {
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
             <div className="flex items-center gap-3 mb-3">
               <BarChart3 size={20} className="text-white" />
-              <span className="text-white font-medium">Twoje statystyki</span>
+              <span className="text-white font-medium">Your statistics</span>
             </div>
             <div className="grid grid-cols-2 gap-4 text-center">
               <div>
                 <div className="text-2xl font-bold text-white">-</div>
-                <div className="text-white/60 text-sm">Utworzone ankiety</div>
+                <div className="text-white/60 text-sm">Created polls</div>
               </div>
               <div>
                 <div className="text-2xl font-bold text-white">-</div>
-                <div className="text-white/60 text-sm">Oddane głosy</div>
+                <div className="text-white/60 text-sm">Votes cast</div>
               </div>
             </div>
           </div>
@@ -74,17 +74,17 @@ const Profile = () => {
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
             <div className="flex items-center gap-3 mb-3">
               <Heart size={20} className="text-white" />
-              <span className="text-white font-medium">Obserwowani</span>
+              <span className="text-white font-medium">Following</span>
             </div>
-            <p className="text-white/70 text-sm">0 osób</p>
+            <p className="text-white/70 text-sm">0 people</p>
           </div>
 
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
             <div className="flex items-center gap-3 mb-3">
               <Settings size={20} className="text-white" />
-              <span className="text-white font-medium">Ustawienia</span>
+              <span className="text-white font-medium">Settings</span>
             </div>
-            <p className="text-white/70 text-sm">Zarządzaj swoim kontem</p>
+            <p className="text-white/70 text-sm">Manage your account</p>
           </div>
 
           <Button
@@ -93,7 +93,7 @@ const Profile = () => {
             className="w-full border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300"
           >
             <LogOut size={18} className="mr-2" />
-            Wyloguj się
+            Sign out
           </Button>
         </div>
       </div>
