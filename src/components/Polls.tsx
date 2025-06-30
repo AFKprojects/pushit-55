@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { TrendingUp, Users, Clock, X, BookmarkPlus, Eye, EyeOff } from 'lucide-react';
+import { TrendingUp, Users, Clock, BookmarkPlus, EyeOff } from 'lucide-react';
 import { usePolls } from '@/hooks/usePolls';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -76,7 +76,7 @@ const Polls = ({ onNavigateToCreate }: PollsProps) => {
 
   const handleSavePoll = async (pollId: string) => {
     const poll = polls.find(p => p.id === pollId);
-    if (poll?.hasVoted) return; // Don't save if already voted
+    if (poll?.hasVoted) return;
     await savePoll(pollId);
   };
 

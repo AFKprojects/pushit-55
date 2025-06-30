@@ -34,12 +34,12 @@ export const usePolls = () => {
     const expiry = new Date(expiresAt);
     const diff = expiry.getTime() - now.getTime();
     
-    if (diff <= 0) return "Zakończone";
+    if (diff <= 0) return "Ended";
     
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     
-    if (days > 0) return `${days} dni`;
+    if (days > 0) return `${days} days`;
     if (hours > 0) return `${hours}h`;
     
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
@@ -73,7 +73,10 @@ export const usePolls = () => {
       if (pollsError) throw pollsError;
 
       let userVotes = [];
+      let hiddenPolls = [];
+      
       if (user) {
+        // Get user votes
         const { data: votesData, error: votesError } = await supabase
           .from('user_votes')
           .select('poll_id, option_id')
@@ -81,38 +84,50 @@ export const usePolls = () => {
         
         if (votesError) throw votesError;
         userVotes = votesData || [];
+
+        // Get hidden polls
+        const { data: hiddenData, error: hiddenError } = await supabase
+          .from('hidden_polls')
+          .select('poll_id')
+          .eq('user_id', user.id);
+        
+        if (hiddenError) throw hiddenError;
+        hiddenPolls = hiddenData?.map(h => h.poll_id) || [];
       }
 
-      const processedPolls = pollsData?.map((poll) => {
-        const userVote = userVotes.find(v => v.poll_id === poll.id);
-        const options = poll.poll_options.map(opt => ({
-          id: opt.id,
-          option_text: opt.option_text,
-          votes: opt.votes,
-          percentage: poll.total_votes > 0 ? Math.round((opt.votes / poll.total_votes) * 100) : 0
-        }));
+      // Filter out hidden polls and process remaining polls
+      const processedPolls = pollsData
+        ?.filter(poll => !hiddenPolls.includes(poll.id))
+        ?.map((poll) => {
+          const userVote = userVotes.find(v => v.poll_id === poll.id);
+          const options = poll.poll_options.map(opt => ({
+            id: opt.id,
+            option_text: opt.option_text,
+            votes: opt.votes,
+            percentage: poll.total_votes > 0 ? Math.round((opt.votes / poll.total_votes) * 100) : 0
+          }));
 
-        return {
-          id: poll.id,
-          question: poll.question,
-          creator_username: poll.creator_username,
-          status: poll.status,
-          total_votes: poll.total_votes,
-          expires_at: poll.expires_at,
-          created_at: poll.created_at,
-          options,
-          timeLeft: calculateTimeLeft(poll.expires_at),
-          hasVoted: !!userVote,
-          userVote: userVote?.option_id
-        };
-      }) || [];
+          return {
+            id: poll.id,
+            question: poll.question,
+            creator_username: poll.creator_username,
+            status: poll.status,
+            total_votes: poll.total_votes,
+            expires_at: poll.expires_at,
+            created_at: poll.created_at,
+            options,
+            timeLeft: calculateTimeLeft(poll.expires_at),
+            hasVoted: !!userVote,
+            userVote: userVote?.option_id
+          };
+        }) || [];
 
       setPolls(processedPolls);
     } catch (error) {
       console.error('Error fetching polls:', error);
       toast({
-        title: "Błąd",
-        description: "Nie udało się pobrać ankiet",
+        title: "Error",
+        description: "Failed to fetch polls",
         variant: "destructive",
       });
     } finally {
@@ -123,8 +138,8 @@ export const usePolls = () => {
   const voteOnPoll = async (pollId: string, optionId: string) => {
     if (!user) {
       toast({
-        title: "Błąd",
-        description: "Musisz być zalogowany aby głosować",
+        title: "Error",
+        description: "You must be logged in to vote",
         variant: "destructive",
       });
       return;
@@ -142,8 +157,8 @@ export const usePolls = () => {
       if (error) throw error;
 
       toast({
-        title: "Sukces",
-        description: "Twój głos został zapisany!",
+        title: "Success",
+        description: "Your vote has been recorded!",
       });
 
       // Refresh polls to show updated vote counts
@@ -151,10 +166,10 @@ export const usePolls = () => {
     } catch (error: any) {
       console.error('Error voting:', error);
       toast({
-        title: "Błąd",
+        title: "Error",
         description: error.message.includes('duplicate key') 
-          ? "Już głosowałeś w tej ankiecie" 
-          : "Nie udało się zagłosować",
+          ? "You have already voted in this poll" 
+          : "Failed to vote",
         variant: "destructive",
       });
     }
@@ -176,14 +191,14 @@ export const usePolls = () => {
       }
 
       toast({
-        title: "Sukces",
-        description: "Ankieta została zapisana do 'Do głosowania'",
+        title: "Success",
+        description: "Poll saved for later voting",
       });
     } catch (error) {
       console.error('Error saving poll:', error);
       toast({
-        title: "Błąd",
-        description: "Nie udało się zapisać ankiety",
+        title: "Error",
+        description: "Failed to save poll",
         variant: "destructive",
       });
     }
@@ -204,18 +219,18 @@ export const usePolls = () => {
         throw error;
       }
 
-      // Remove poll from current list
+      // Remove poll from current list immediately
       setPolls(prev => prev.filter(poll => poll.id !== pollId));
       
       toast({
-        title: "Sukces",
-        description: "Ankieta została ukryta",
+        title: "Success",
+        description: "Poll hidden",
       });
     } catch (error) {
       console.error('Error hiding poll:', error);
       toast({
-        title: "Błąd",
-        description: "Nie udało się ukryć ankiety",
+        title: "Error",
+        description: "Failed to hide poll",
         variant: "destructive",
       });
     }

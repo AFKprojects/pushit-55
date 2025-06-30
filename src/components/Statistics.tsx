@@ -1,4 +1,5 @@
-import { BarChart3, Globe, Clock, Trophy, TrendingUp, Users, MapPin } from 'lucide-react';
+
+import { BarChart3, Globe, Clock, Trophy, TrendingUp, Users } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -13,6 +14,7 @@ interface StatData {
 
 interface CountryStats {
   country: string;
+  code: string;
   count: number;
 }
 
@@ -90,23 +92,23 @@ const Statistics = () => {
           });
         }
 
-        // Generate realistic country statistics based on actual user count
+        // Generate realistic country statistics with flags
         const totalUsers = usersCount || 0;
         const mockCountryStats: CountryStats[] = [];
         
         if (totalUsers > 0) {
           // Distribute users across countries with realistic percentages
           const countryDistribution = [
-            { country: 'United States', percentage: 0.35 },
-            { country: 'Germany', percentage: 0.15 },
-            { country: 'United Kingdom', percentage: 0.12 },
-            { country: 'France', percentage: 0.10 },
-            { country: 'Canada', percentage: 0.08 },
-            { country: 'Australia', percentage: 0.06 },
-            { country: 'Japan', percentage: 0.05 },
-            { country: 'Netherlands', percentage: 0.04 },
-            { country: 'Spain', percentage: 0.03 },
-            { country: 'Italy', percentage: 0.02 }
+            { country: 'United States', code: 'US', percentage: 0.25 },
+            { country: 'Germany', code: 'DE', percentage: 0.15 },
+            { country: 'United Kingdom', code: 'GB', percentage: 0.12 },
+            { country: 'Belgium', code: 'BE', percentage: 0.10 },
+            { country: 'France', code: 'FR', percentage: 0.10 },
+            { country: 'Canada', code: 'CA', percentage: 0.08 },
+            { country: 'Netherlands', code: 'NL', percentage: 0.07 },
+            { country: 'Australia', code: 'AU', percentage: 0.06 },
+            { country: 'Spain', code: 'ES', percentage: 0.04 },
+            { country: 'Italy', code: 'IT', percentage: 0.03 }
           ];
 
           let remainingUsers = totalUsers;
@@ -114,7 +116,6 @@ const Statistics = () => {
           countryDistribution.forEach((country, index) => {
             let userCount;
             if (index === countryDistribution.length - 1) {
-              // Last country gets remaining users
               userCount = remainingUsers;
             } else {
               userCount = Math.floor(totalUsers * country.percentage);
@@ -124,12 +125,12 @@ const Statistics = () => {
             if (userCount > 0) {
               mockCountryStats.push({
                 country: country.country,
+                code: country.code,
                 count: userCount
               });
             }
           });
 
-          // Sort by count descending
           mockCountryStats.sort((a, b) => b.count - a.count);
         }
 
@@ -143,7 +144,6 @@ const Statistics = () => {
         });
 
         setCountryStats(mockCountryStats);
-        console.log('Updated country stats:', mockCountryStats);
       } catch (error) {
         console.error('Error fetching stats:', error);
       } finally {
@@ -256,11 +256,11 @@ const Statistics = () => {
           })}
         </div>
 
-        {/* Country Statistics Section */}
+        {/* Country Statistics Section with Flags */}
         <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-4 border border-blue-500/20">
           <div className="flex items-center gap-3 mb-4">
             <div className="p-2 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500">
-              <MapPin size={20} className="text-black" />
+              <Globe size={20} className="text-black" />
             </div>
             <h3 className="text-blue-200 font-medium">Top Countries</h3>
           </div>
@@ -271,13 +271,23 @@ const Statistics = () => {
             </div>
           ) : countryStats.length > 0 ? (
             <div className="space-y-3">
-              {countryStats.slice(0, 7).map((country, index) => (
+              {countryStats.slice(0, 8).map((country, index) => (
                 <div key={country.country} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <div className="w-6 h-6 rounded-full bg-gradient-to-r from-blue-400 to-cyan-400 flex items-center justify-center text-xs text-black font-bold">
                       {index + 1}
                     </div>
-                    <span className="text-blue-200">{country.country}</span>
+                    <div className="flex items-center gap-2">
+                      <img 
+                        src={`https://flagcdn.com/w20/${country.code.toLowerCase()}.png`}
+                        alt={`${country.country} flag`}
+                        className="w-5 h-auto rounded"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                      <span className="text-blue-200">{country.country}</span>
+                    </div>
                   </div>
                   <span className="text-blue-400 font-medium">{country.count}</span>
                 </div>
