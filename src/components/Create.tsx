@@ -7,10 +7,9 @@ import { Textarea } from '@/components/ui/textarea';
 const Create = () => {
   const [question, setQuestion] = useState('');
   const [options, setOptions] = useState(['', '']);
-  const [duration, setDuration] = useState('7');
 
   const addOption = () => {
-    if (options.length < 6) {
+    if (options.length < 5) {
       setOptions([...options, '']);
     }
   };
@@ -29,33 +28,36 @@ const Create = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Handle poll creation
-    console.log('Creating poll:', { question, options: options.filter(o => o.trim()), duration });
+    console.log('Creating subject:', { question, options: options.filter(o => o.trim()) });
   };
 
-  const isValid = question.trim() && options.filter(o => o.trim()).length >= 2;
+  const isValid = question.trim() && question.length <= 200 && options.filter(o => o.trim()).length >= 2;
 
   return (
     <div className="flex-1 px-6 py-8 overflow-y-auto">
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-400 to-yellow-500 bg-clip-text text-transparent mb-2">
-            Create Your Poll
+            Push Your Subject
           </h1>
           <p className="text-gray-300">
-            Ask the HIVE community what they think
+            Ask the PUSH community what they think
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-6 border border-orange-500/30">
             <label className="block text-orange-200 font-medium mb-3">
-              Poll Question
+              Subject Question
+              <span className="text-orange-300/60 text-sm ml-2">
+                ({question.length}/200 characters)
+              </span>
             </label>
             <Textarea
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
-              placeholder="What would you like to ask the community?"
+              maxLength={200}
+              placeholder="What would you like to ask The World today?"
               className="bg-black/20 border-orange-500/20 text-orange-200 placeholder:text-orange-300/60 resize-none"
               rows={3}
             />
@@ -64,12 +66,12 @@ const Create = () => {
           <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-6 border border-orange-500/30">
             <div className="flex items-center justify-between mb-4">
               <label className="block text-orange-200 font-medium">
-                Answer Options
+                Answer Options (2-5 options)
               </label>
               <Button
                 type="button"
                 onClick={addOption}
-                disabled={options.length >= 6}
+                disabled={options.length >= 5}
                 size="sm"
                 className="bg-black/20 hover:bg-black/40 text-orange-200 border-orange-500/20"
                 variant="outline"
@@ -108,20 +110,8 @@ const Create = () => {
           </div>
 
           <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-6 border border-orange-500/30">
-            <label className="block text-orange-200 font-medium mb-3">
-              Poll Duration
-            </label>
-            <select
-              value={duration}
-              onChange={(e) => setDuration(e.target.value)}
-              className="w-full bg-black/20 border border-orange-500/20 rounded-lg px-4 py-3 text-orange-200 focus:outline-none focus:ring-2 focus:ring-orange-400"
-            >
-              <option value="1" className="bg-gray-800">1 day</option>
-              <option value="3" className="bg-gray-800">3 days</option>
-              <option value="7" className="bg-gray-800">1 week</option>
-              <option value="14" className="bg-gray-800">2 weeks</option>
-              <option value="30" className="bg-gray-800">1 month</option>
-            </select>
+            <div className="text-orange-200 font-medium mb-2">Subject Duration</div>
+            <div className="text-orange-300/70 text-sm">All subjects are visible for 24 hours</div>
           </div>
 
           <div className="flex gap-4">
@@ -132,7 +122,6 @@ const Create = () => {
               onClick={() => {
                 setQuestion('');
                 setOptions(['', '']);
-                setDuration('7');
               }}
             >
               Clear
@@ -142,7 +131,7 @@ const Create = () => {
               disabled={!isValid}
               className="flex-1 bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-black font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Create Poll
+              Create Subject
             </Button>
           </div>
         </form>

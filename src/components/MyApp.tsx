@@ -1,5 +1,4 @@
 
-
 import { useState } from 'react';
 import { Users, BarChart3, Clock, Vote, Archive, BookmarkPlus, Eye, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -13,14 +12,14 @@ interface Poll {
 }
 
 const MyApp = () => {
-  const [activeSection, setActiveSection] = useState('mypolls');
-  const [myPollsTab, setMyPollsTab] = useState('created');
+  const [activeSection, setActiveSection] = useState('mysubjects');
+  const [mySubjectsTab, setMySubjectsTab] = useState('created');
   const [createdTab, setCreatedTab] = useState('live');
 
   // Mock data
   const [createdPolls] = useState<Poll[]>([
-    { id: 1, question: "Best time to hold?", votes: 89, status: 'live', timeLeft: '2 days' },
-    { id: 2, question: "Favorite hold duration?", votes: 156, status: 'live', timeLeft: '5 days' },
+    { id: 1, question: "Best time to push?", votes: 89, status: 'live', timeLeft: '2 days left' },
+    { id: 2, question: "Favorite push duration?", votes: 156, status: 'live', timeLeft: '5h left' },
     { id: 3, question: "Best button color?", votes: 67, status: 'archive' },
   ]);
 
@@ -30,17 +29,17 @@ const MyApp = () => {
   ]);
 
   const [toVotePolls] = useState<Poll[]>([
-    { id: 6, question: "What motivates you to hold?", votes: 45, status: 'live', timeLeft: '3 days' },
-    { id: 7, question: "Ideal session length?", votes: 78, status: 'live', timeLeft: '1 day' },
+    { id: 6, question: "What motivates you to push?", votes: 45, status: 'live', timeLeft: '12 mins left' },
+    { id: 7, question: "Ideal session length?", votes: 78, status: 'live', timeLeft: '1 day left' },
   ]);
 
   const sections = [
-    { id: 'mypolls', label: 'My Polls', icon: BarChart3 },
+    { id: 'mysubjects', label: 'My Subjects', icon: BarChart3 },
     { id: 'community', label: 'Community', icon: Users },
   ];
 
-  const renderMyPolls = () => {
-    const myPollsTabs = [
+  const renderMySubjects = () => {
+    const mySubjectsTabs = [
       { id: 'created', label: 'Created' },
       { id: 'voted', label: 'Voted' },
       { id: 'tovote', label: 'To Vote' },
@@ -141,8 +140,8 @@ const MyApp = () => {
       </div>
     );
 
-    const renderMyPollsContent = () => {
-      switch (myPollsTab) {
+    const renderMySubjectsContent = () => {
+      switch (mySubjectsTab) {
         case 'created':
           return renderCreatedPolls();
         case 'voted':
@@ -157,13 +156,13 @@ const MyApp = () => {
     return (
       <div className="space-y-4">
         <div className="flex bg-black/40 rounded-xl p-1">
-          {myPollsTabs.map((tab) => (
+          {mySubjectsTabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setMyPollsTab(tab.id)}
+              onClick={() => setMySubjectsTab(tab.id)}
               className={cn(
                 "flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200",
-                myPollsTab === tab.id
+                mySubjectsTab === tab.id
                   ? "bg-blue-500/20 text-blue-400"
                   : "text-blue-200/70 hover:text-blue-200"
               )}
@@ -173,7 +172,7 @@ const MyApp = () => {
           ))}
         </div>
 
-        {renderMyPollsContent()}
+        {renderMySubjectsContent()}
       </div>
     );
   };
@@ -194,7 +193,7 @@ const MyApp = () => {
         <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-4 border border-blue-500/20 text-center">
           <Vote size={24} className="text-cyan-400 mx-auto mb-2" />
           <div className="text-2xl font-bold text-blue-400">342</div>
-          <div className="text-blue-300/60 text-sm">Poll Votes</div>
+          <div className="text-blue-300/60 text-sm">Subject Votes</div>
         </div>
       </div>
 
@@ -205,8 +204,8 @@ const MyApp = () => {
         </h3>
         <div className="space-y-2 text-blue-300/70 text-sm">
           <p>• 12 new observers this week</p>
-          <p>• Your poll got 67 new votes</p>
-          <p>• 3 people commented on your polls</p>
+          <p>• Your subject got 67 new votes</p>
+          <p>• 3 people commented on your subjects</p>
         </div>
       </div>
     </div>
@@ -214,12 +213,12 @@ const MyApp = () => {
 
   const renderContent = () => {
     switch (activeSection) {
-      case 'mypolls':
-        return renderMyPolls();
+      case 'mysubjects':
+        return renderMySubjects();
       case 'community':
         return renderCommunity();
       default:
-        return renderMyPolls();
+        return renderMySubjects();
     }
   };
 
@@ -262,4 +261,3 @@ const MyApp = () => {
 };
 
 export default MyApp;
-

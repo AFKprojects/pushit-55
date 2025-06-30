@@ -7,29 +7,25 @@ const Statistics = () => {
       icon: Users,
       title: 'Community Members',
       value: '24,891',
-      change: 'Total registered',
       color: 'from-blue-500 to-cyan-500'
     },
     {
       icon: Clock,
       title: 'Button Presses (24h)',
       value: '12,847',
-      change: '+2.3%',
       color: 'from-cyan-500 to-blue-600'
     },
     {
-      icon: Trophy,
-      title: 'Max Simultaneous Users',
-      value: '1,247',
-      change: 'All-time record',
-      color: 'from-blue-600 to-indigo-500'
+      icon: TrendingUp,
+      title: 'Max Simultaneous Holds (24h)',
+      value: '892',
+      color: 'from-cyan-600 to-blue-500'
     },
     {
-      icon: TrendingUp,
-      title: 'Max Simultaneous Today',
-      value: '892',
-      change: 'Daily record',
-      color: 'from-cyan-600 to-blue-500'
+      icon: Trophy,
+      title: 'All Time Hold Record',
+      value: '1,247',
+      color: 'from-blue-600 to-indigo-500'
     }
   ];
 
@@ -49,7 +45,7 @@ const Statistics = () => {
       <div className="max-w-md mx-auto space-y-6">
         <div className="text-center mb-8">
           <h2 className="text-2xl font-bold text-blue-400 mb-2">Community Statistics</h2>
-          <p className="text-blue-200/70">Data from our global ButtonApp community</p>
+          <p className="text-blue-200/70">Data from our global Push It! community</p>
         </div>
 
         {/* Key Stats */}
@@ -68,7 +64,6 @@ const Statistics = () => {
                     </div>
                     <div>
                       <h3 className="text-blue-200 font-medium">{stat.title}</h3>
-                      <p className="text-blue-300/60 text-sm">{stat.change}</p>
                     </div>
                   </div>
                   <div className="text-right">
@@ -109,19 +104,6 @@ const Statistics = () => {
                 </div>
               );
             })}
-          </div>
-        </div>
-
-        {/* Live Activity */}
-        <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-4 border border-blue-500/20">
-          <h3 className="text-blue-200 font-medium mb-3 flex items-center gap-2">
-            <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
-            Live Activity
-          </h3>
-          <div className="text-blue-300/70 text-sm space-y-1">
-            <p>• Someone from Japan just held for 3 seconds</p>
-            <p>• New poll created: "Best time to connect?"</p>
-            <p>• Community milestone: 25K members reached!</p>
           </div>
         </div>
       </div>

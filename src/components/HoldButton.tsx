@@ -57,9 +57,9 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders }: HoldButtonProps) 
   }, []);
 
   const getButtonColor = () => {
-    if (isActivated) return 'from-blue-400 to-cyan-500';
-    if (isPressed) return 'from-cyan-500 to-blue-600';
-    return 'from-blue-500 to-cyan-600';
+    if (isActivated) return 'from-orange-400 to-yellow-500';
+    if (isPressed) return 'from-orange-500 to-red-600';
+    return 'from-orange-500 to-yellow-600';
   };
 
   const getButtonScale = () => {
@@ -72,7 +72,7 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders }: HoldButtonProps) 
     <div className="relative">
       {/* Outer glow effect with heartbeat animation */}
       {isActivated && (
-        <div className="absolute inset-0 rounded-full bg-blue-400/30 animate-pulse scale-150" 
+        <div className="absolute inset-0 rounded-full bg-orange-400/30 animate-pulse scale-150" 
              style={{ 
                animation: 'heartbeat 1.2s ease-in-out infinite',
                animationDelay: '0s'
@@ -90,7 +90,7 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders }: HoldButtonProps) 
             cy="50"
             r="45"
             fill="none"
-            stroke="cyan"
+            stroke="orange"
             strokeWidth="2"
             strokeOpacity="0.3"
           />
@@ -99,7 +99,7 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders }: HoldButtonProps) 
             cy="50"
             r="45"
             fill="none"
-            stroke="cyan"
+            stroke="orange"
             strokeWidth="2"
             strokeDasharray={`${2 * Math.PI * 45}`}
             strokeDashoffset={`${2 * Math.PI * 45 * (1 - holdProgress)}`}
@@ -140,8 +140,8 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders }: HoldButtonProps) 
             </div>
           ) : (
             <div>
-              <div className="text-xl font-bold mb-1">HOLD</div>
-              <div className="text-sm opacity-80">Press & hold for 3s</div>
+              <div className="text-xl font-bold">HOLD</div>
+              <div className="text-sm opacity-80 mt-1">Press & hold for 3s</div>
             </div>
           )}
         </div>
