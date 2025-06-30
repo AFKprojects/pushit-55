@@ -1,11 +1,16 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User } from '@supabase/supabase-js';
+import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 
 interface AuthContextType {
   user: User | null;
+  session: Session | null;
   loading: boolean;
+  signUp: (email: string, password: string) => Promise<{ error: any }>;
+  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signInWithGoogle: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
 
@@ -13,34 +18,65 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Get initial session
-    const getInitialSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setUser(session?.user ?? null);
-      } catch (error) {
-        console.error('Error getting session:', error);
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    getInitialSession();
-
-    // Listen for auth changes
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        
+        // Redirect to main page after successful login
+        if (event === 'SIGNED_IN' && session?.user) {
+          navigate('/');
+        }
       }
     );
 
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
     return () => subscription.unsubscribe();
-  }, []);
+  }, [navigate]);
+
+  const signUp = async (email: string, password: string) => {
+    const redirectUrl = `${window.location.origin}/`;
+    
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: redirectUrl
+      }
+    });
+    return { error };
+  };
+
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    return { error };
+  };
+
+  const signInWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/`
+      }
+    });
+    return { error };
+  };
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -48,7 +84,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const value = {
     user,
+    session,
     loading,
+    signUp,
+    signIn,
+    signInWithGoogle,
     signOut,
   };
 
