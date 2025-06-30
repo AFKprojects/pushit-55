@@ -1,4 +1,3 @@
-
 import { useState, useRef } from 'react';
 import { TrendingUp, Users, Clock, X, BookmarkPlus, ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -55,8 +54,65 @@ const Polls = ({ onNavigateToCreate, onSavePollToVote, onHidePoll }: PollsProps)
   const [draggedPoll, setDraggedPoll] = useState<number | null>(null);
   const [dragOffset, setDragOffset] = useState(0);
   const [showSwipeHint, setShowSwipeHint] = useState(true);
+  const [votingOption, setVotingOption] = useState<{pollId: number, optionIndex: number} | null>(null);
+  const [votingProgress, setVotingProgress] = useState(0);
   const startX = useRef(0);
   const isDragging = useRef(false);
+  const votingTimer = useRef<NodeJS.Timeout | null>(null);
+
+  const handleVoteStart = (pollId: number, optionIndex: number) => {
+    if (votingOption) return; // Prevent multiple votes at once
+    
+    setVotingOption({ pollId, optionIndex });
+    setVotingProgress(0);
+    
+    const interval = setInterval(() => {
+      setVotingProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          handleVoteComplete(pollId, optionIndex);
+          return 100;
+        }
+        return prev + (100 / 30); // 3 seconds = 30 intervals of 100ms
+      });
+    }, 100);
+    
+    votingTimer.current = interval;
+  };
+
+  const handleVoteEnd = () => {
+    if (votingTimer.current) {
+      clearInterval(votingTimer.current);
+      votingTimer.current = null;
+    }
+    setVotingOption(null);
+    setVotingProgress(0);
+  };
+
+  const handleVoteComplete = (pollId: number, optionIndex: number) => {
+    console.log(`Voted for option ${optionIndex} in poll ${pollId}`);
+    setPolls(prev => prev.map(poll => {
+      if (poll.id === pollId) {
+        const newOptions = [...poll.options];
+        newOptions[optionIndex] = {
+          ...newOptions[optionIndex],
+          votes: newOptions[optionIndex].votes + 1
+        };
+        const newTotalVotes = poll.totalVotes + 1;
+        // Recalculate percentages
+        newOptions.forEach(option => {
+          option.percentage = Math.round((option.votes / newTotalVotes) * 100);
+        });
+        return {
+          ...poll,
+          options: newOptions,
+          totalVotes: newTotalVotes
+        };
+      }
+      return poll;
+    }));
+    handleVoteEnd();
+  };
 
   const handleTouchStart = (e: React.TouchEvent, pollId: number) => {
     startX.current = e.touches[0].clientX;
@@ -140,7 +196,7 @@ const Polls = ({ onNavigateToCreate, onSavePollToVote, onHidePoll }: PollsProps)
     <div className="flex-1 px-6 py-8 overflow-y-auto">
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-cyan-500 bg-clip-text text-transparent mb-2">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-400 to-yellow-500 bg-clip-text text-transparent mb-2">
             Vote on the subjects that matter to you
           </h1>
           <p className="text-gray-300">
@@ -153,7 +209,7 @@ const Polls = ({ onNavigateToCreate, onSavePollToVote, onHidePoll }: PollsProps)
           <div className="flex items-center justify-center mb-4 animate-pulse">
             <ChevronLeft className="text-red-400" size={20} />
             <span className="text-gray-400 text-sm mx-2">Swipe to interact</span>
-            <ChevronRight className="text-green-400" size={20} />
+            <ChevronRight className="text-orange-400" size={20} />
           </div>
         )}
 
@@ -169,8 +225,8 @@ const Polls = ({ onNavigateToCreate, onSavePollToVote, onHidePoll }: PollsProps)
               {/* Swipe indicators */}
               <div className="absolute inset-0 flex items-center justify-between px-8 pointer-events-none z-0">
                 <div className={`flex items-center gap-2 transition-opacity duration-200 ${draggedPoll === poll.id && dragOffset > 50 ? 'opacity-100' : 'opacity-0'}`}>
-                  <BookmarkPlus className="text-green-400" size={24} />
-                  <span className="text-green-400 font-medium">Save for later</span>
+                  <BookmarkPlus className="text-orange-400" size={24} />
+                  <span className="text-orange-400 font-medium">Save for later</span>
                 </div>
                 <div className={`flex items-center gap-2 transition-opacity duration-200 ${draggedPoll === poll.id && dragOffset < -50 ? 'opacity-100' : 'opacity-0'}`}>
                   <span className="text-red-400 font-medium">Don't show again</span>
@@ -179,13 +235,13 @@ const Polls = ({ onNavigateToCreate, onSavePollToVote, onHidePoll }: PollsProps)
               </div>
 
               <div
-                className={`bg-black/40 backdrop-blur-sm rounded-2xl p-6 border border-blue-500/30 cursor-grab active:cursor-grabbing transition-all duration-200 relative z-10 ${
+                className={`bg-black/40 backdrop-blur-sm rounded-2xl p-6 border border-orange-500/30 cursor-grab active:cursor-grabbing transition-all duration-200 relative z-10 ${
                   draggedPoll === poll.id ? 'select-none' : ''
                 }`}
                 style={{
                   transform: draggedPoll === poll.id ? `translateX(${dragOffset}px) scale(${1 - Math.abs(dragOffset) * 0.0005})` : 'translateX(0)',
                   backgroundColor: draggedPoll === poll.id && Math.abs(dragOffset) > 50 
-                    ? (dragOffset > 0 ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)') 
+                    ? (dragOffset > 0 ? 'rgba(251, 146, 60, 0.1)' : 'rgba(239, 68, 68, 0.1)') 
                     : undefined
                 }}
                 onTouchStart={(e) => handleTouchStart(e, poll.id)}
@@ -195,38 +251,56 @@ const Polls = ({ onNavigateToCreate, onSavePollToVote, onHidePoll }: PollsProps)
               >
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h3 className="text-lg font-semibold text-blue-200 mb-2">
+                    <h3 className="text-lg font-semibold text-orange-200 mb-2">
                       {poll.question}
                     </h3>
-                    <p className="text-blue-300/60 text-sm">created by {poll.createdBy}</p>
+                    <p className="text-orange-300/60 text-sm">created by {poll.createdBy}</p>
                   </div>
-                  <div className="flex items-center text-blue-300/70 text-sm">
+                  <div className="flex items-center text-orange-300/70 text-sm">
                     <Clock size={16} className="mr-1" />
                     {poll.timeLeft}
                   </div>
                 </div>
 
                 <div className="space-y-3 mb-4">
-                  {poll.options.map((option, index) => (
-                    <div
-                      key={index}
-                      className="bg-black/20 rounded-lg p-3 cursor-pointer hover:bg-black/40 transition-colors"
-                    >
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-blue-200">{option.text}</span>
-                        <span className="text-blue-300/80 text-sm">{option.percentage}%</span>
+                  {poll.options.map((option, index) => {
+                    const isVoting = votingOption?.pollId === poll.id && votingOption?.optionIndex === index;
+                    return (
+                      <div
+                        key={index}
+                        className="bg-black/20 rounded-lg p-3 cursor-pointer hover:bg-black/40 transition-colors relative overflow-hidden"
+                        onMouseDown={() => handleVoteStart(poll.id, index)}
+                        onMouseUp={handleVoteEnd}
+                        onMouseLeave={handleVoteEnd}
+                        onTouchStart={() => handleVoteStart(poll.id, index)}
+                        onTouchEnd={handleVoteEnd}
+                      >
+                        {/* Voting progress overlay */}
+                        {isVoting && (
+                          <div 
+                            className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-yellow-500/20 transition-all duration-100"
+                            style={{ width: `${votingProgress}%` }}
+                          />
+                        )}
+                        
+                        <div className="relative z-10">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-orange-200">{option.text}</span>
+                            <span className="text-orange-300/80 text-sm">{option.percentage}%</span>
+                          </div>
+                          <div className="bg-black/40 rounded-full h-2">
+                            <div
+                              className="bg-gradient-to-r from-orange-400 to-yellow-500 h-2 rounded-full transition-all duration-300"
+                              style={{ width: `${option.percentage}%` }}
+                            />
+                          </div>
+                        </div>
                       </div>
-                      <div className="bg-black/40 rounded-full h-2">
-                        <div
-                          className="bg-gradient-to-r from-blue-400 to-cyan-500 h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${option.percentage}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
-                <div className="flex items-center justify-between text-blue-300/70 text-sm">
+                <div className="flex items-center justify-between text-orange-300/70 text-sm">
                   <div className="flex items-center">
                     <Users size={16} className="mr-1" />
                     {poll.totalVotes} votes
@@ -244,7 +318,7 @@ const Polls = ({ onNavigateToCreate, onSavePollToVote, onHidePoll }: PollsProps)
         <div className="mt-8 text-center">
           <button 
             onClick={onNavigateToCreate}
-            className="bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-xl px-6 py-3 border border-blue-500/30 text-blue-200 font-medium transition-colors"
+            className="bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-xl px-6 py-3 border border-orange-500/30 text-orange-200 font-medium transition-colors"
           >
             Create Your Subject
           </button>
