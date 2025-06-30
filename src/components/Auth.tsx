@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -7,17 +6,30 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { LogIn, Mail, Lock, UserPlus, ArrowLeft, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [showReset, setShowReset] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { signUp, signIn, signInWithGoogle } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Check if this is a password reset callback
+  useEffect(() => {
+    const type = searchParams.get('type');
+    if (type === 'recovery') {
+      setShowNewPassword(true);
+      setShowReset(false);
+      setIsLogin(false);
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,7 +77,7 @@ const Auth = () => {
     setLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth`,
+        redirectTo: `${window.location.origin}/auth?type=recovery`,
       });
 
       if (error) {
@@ -92,16 +104,35 @@ const Auth = () => {
     }
   };
 
-  const handleGoogleSignIn = async () => {
+  const handleNewPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password !== confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Passwords don't match",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
-      const { error } = await signInWithGoogle();
+      const { error } = await supabase.auth.updateUser({
+        password: password
+      });
+
       if (error) {
         toast({
           title: "Error",
           description: error.message,
           variant: "destructive",
         });
+      } else {
+        toast({
+          title: "Success",
+          description: "Password updated successfully",
+        });
+        navigate('/');
       }
     } catch (error) {
       toast({
@@ -113,6 +144,103 @@ const Auth = () => {
       setLoading(false);
     }
   };
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    try {
+      const { error } = await signInWithGoogle();
+      if (error) {
+        // Show more specific error for Google OAuth
+        if (error.message.includes('provider is not enabled')) {
+          toast({
+            title: "Google Sign-in Not Available",
+            description: "Google authentication is not configured. Please use email/password login.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: error.message,
+            variant: "destructive",
+          });
+        }
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (showNewPassword) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-900 via-red-900 to-yellow-900 flex items-center justify-center px-4">
+        <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-8 border border-orange-500/30 w-full max-w-md">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-400 to-yellow-500 bg-clip-text text-transparent mb-2">
+              Set New Password
+            </h1>
+            <p className="text-orange-300/70">
+              Enter your new password
+            </p>
+          </div>
+
+          <form onSubmit={handleNewPassword} className="space-y-4">
+            <div>
+              <Label htmlFor="password" className="text-orange-200">New Password</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 h-4 w-4 text-orange-300/50" />
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="pl-10 bg-black/20 border-orange-500/30 text-orange-100 placeholder:text-orange-300/50"
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="confirmPassword" className="text-orange-200">Confirm New Password</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 h-4 w-4 text-orange-300/50" />
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="pl-10 bg-black/20 border-orange-500/30 text-orange-100 placeholder:text-orange-300/50"
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+            </div>
+
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-medium"
+            >
+              {loading ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                'Update Password'
+              )}
+            </Button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   if (showReset) {
     return (

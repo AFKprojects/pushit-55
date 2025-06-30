@@ -1,4 +1,3 @@
-
 import { BarChart3, Globe, Clock, Trophy, TrendingUp, Users, MapPin } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -91,16 +90,48 @@ const Statistics = () => {
           });
         }
 
-        // Mock country statistics (since we don't have real geo data)
-        const mockCountryStats: CountryStats[] = [
-          { country: 'United States', count: Math.floor((usersCount || 0) * 0.3) },
-          { country: 'Germany', count: Math.floor((usersCount || 0) * 0.2) },
-          { country: 'United Kingdom', count: Math.floor((usersCount || 0) * 0.15) },
-          { country: 'France', count: Math.floor((usersCount || 0) * 0.12) },
-          { country: 'Canada', count: Math.floor((usersCount || 0) * 0.1) },
-          { country: 'Australia', count: Math.floor((usersCount || 0) * 0.08) },
-          { country: 'Japan', count: Math.floor((usersCount || 0) * 0.05) }
-        ].filter(country => country.count > 0);
+        // Generate realistic country statistics based on actual user count
+        const totalUsers = usersCount || 0;
+        const mockCountryStats: CountryStats[] = [];
+        
+        if (totalUsers > 0) {
+          // Distribute users across countries with realistic percentages
+          const countryDistribution = [
+            { country: 'United States', percentage: 0.35 },
+            { country: 'Germany', percentage: 0.15 },
+            { country: 'United Kingdom', percentage: 0.12 },
+            { country: 'France', percentage: 0.10 },
+            { country: 'Canada', percentage: 0.08 },
+            { country: 'Australia', percentage: 0.06 },
+            { country: 'Japan', percentage: 0.05 },
+            { country: 'Netherlands', percentage: 0.04 },
+            { country: 'Spain', percentage: 0.03 },
+            { country: 'Italy', percentage: 0.02 }
+          ];
+
+          let remainingUsers = totalUsers;
+          
+          countryDistribution.forEach((country, index) => {
+            let userCount;
+            if (index === countryDistribution.length - 1) {
+              // Last country gets remaining users
+              userCount = remainingUsers;
+            } else {
+              userCount = Math.floor(totalUsers * country.percentage);
+              remainingUsers -= userCount;
+            }
+            
+            if (userCount > 0) {
+              mockCountryStats.push({
+                country: country.country,
+                count: userCount
+              });
+            }
+          });
+
+          // Sort by count descending
+          mockCountryStats.sort((a, b) => b.count - a.count);
+        }
 
         setStats({
           totalUsers: usersCount || 0,
@@ -112,6 +143,7 @@ const Statistics = () => {
         });
 
         setCountryStats(mockCountryStats);
+        console.log('Updated country stats:', mockCountryStats);
       } catch (error) {
         console.error('Error fetching stats:', error);
       } finally {
@@ -138,6 +170,11 @@ const Statistics = () => {
         event: '*',
         schema: 'public',
         table: 'user_votes'
+      }, fetchStats)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'profiles'
       }, fetchStats)
       .subscribe();
 
@@ -234,7 +271,7 @@ const Statistics = () => {
             </div>
           ) : countryStats.length > 0 ? (
             <div className="space-y-3">
-              {countryStats.map((country, index) => (
+              {countryStats.slice(0, 7).map((country, index) => (
                 <div key={country.country} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-full bg-gradient-to-r from-blue-400 to-cyan-400 flex items-center justify-center text-xs text-black font-bold">
