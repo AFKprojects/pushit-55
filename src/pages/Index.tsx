@@ -62,7 +62,7 @@ const Index = () => {
                   className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-medium"
                 >
                   <LogIn size={18} className="mr-2" />
-                  Zaloguj się
+                  Login
                 </Button>
               </div>
             )}
@@ -73,8 +73,8 @@ const Index = () => {
               </h1>
               <p className="text-gray-300 text-lg max-w-md">
                 {user 
-                  ? "Przytrzymaj przycisk przez 3 sekundy aby zobaczyć ile osób na świecie robi to samo co Ty"
-                  : "Zaloguj się aby dołączyć do globalnej społeczności Push It!"
+                  ? "Hold the button for 3 seconds to see how many people worldwide are doing the same as you"
+                  : "Log in to join the global Push It! community"
                 }
               </p>
             </div>
@@ -94,7 +94,7 @@ const Index = () => {
                       {activeHolders}
                     </div>
                     <div className="text-orange-200 text-sm text-center">
-                      {activeHolders === 1 ? 'osoba przytrzymuje' : 'osób przytrzymuje'} razem z Tobą
+                      {activeHolders === 1 ? 'person is holding' : 'people are holding'} together with you
                     </div>
                   </div>
                 </div>
@@ -103,7 +103,7 @@ const Index = () => {
               {!user && (
                 <div className="absolute -bottom-16 left-1/2 transform -translate-x-1/2 text-center">
                   <p className="text-orange-300/70 text-sm">
-                    Zaloguj się aby uczestniczyć w globalnym doświadczeniu
+                    Log in to participate in the global experience
                   </p>
                 </div>
               )}

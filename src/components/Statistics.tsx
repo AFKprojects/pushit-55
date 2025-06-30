@@ -47,17 +47,50 @@ const Statistics = () => {
           .from('user_votes')
           .select('*', { count: 'exact', head: true });
 
-        // Get current active holds (max simultaneous approximation)
+        // Get current active holds
         const { count: activeHolds } = await supabase
           .from('button_holds')
           .select('*', { count: 'exact', head: true })
           .eq('is_active', true);
 
+        // Calculate all-time record by finding the maximum number of simultaneous active holds
+        // This is a simplified approach - in production you'd want to track this more precisely
+        const { data: allHolds } = await supabase
+          .from('button_holds')
+          .select('started_at, ended_at')
+          .order('started_at', { ascending: true });
+
+        let maxSimultaneous = 0;
+        let currentSimultaneous = 0;
+        
+        if (allHolds) {
+          // Simple calculation - in reality you'd need more sophisticated tracking
+          const events: Array<{time: Date, type: 'start' | 'end'}> = [];
+          
+          allHolds.forEach(hold => {
+            events.push({ time: new Date(hold.started_at), type: 'start' });
+            if (hold.ended_at) {
+              events.push({ time: new Date(hold.ended_at), type: 'end' });
+            }
+          });
+          
+          events.sort((a, b) => a.time.getTime() - b.time.getTime());
+          
+          events.forEach(event => {
+            if (event.type === 'start') {
+              currentSimultaneous++;
+              maxSimultaneous = Math.max(maxSimultaneous, currentSimultaneous);
+            } else {
+              currentSimultaneous--;
+            }
+          });
+        }
+
         setStats({
           totalUsers: usersCount || 0,
           buttonPresses24h: buttonPresses || 0,
           maxSimultaneous24h: activeHolds || 0,
-          allTimeRecord: Math.max(activeHolds || 0, 50), // Placeholder for all-time record
+          allTimeRecord: Math.max(maxSimultaneous, activeHolds || 0),
           totalPolls: pollsCount || 0,
           totalVotes: votesCount || 0
         });
@@ -98,37 +131,37 @@ const Statistics = () => {
   const statsData = [
     {
       icon: Users,
-      title: 'Członkowie społeczności',
+      title: 'Community Members',
       value: loading ? '-' : stats.totalUsers.toLocaleString(),
       color: 'from-blue-500 to-cyan-500'
     },
     {
       icon: Clock,
-      title: 'Naciśnięcia (24h)',
+      title: 'Button Presses (24h)',
       value: loading ? '-' : stats.buttonPresses24h.toLocaleString(),
       color: 'from-cyan-500 to-blue-600'
     },
     {
       icon: TrendingUp,
-      title: 'Maks. jednoczesnych (24h)',
+      title: 'Max Simultaneous (24h)',
       value: loading ? '-' : stats.maxSimultaneous24h.toLocaleString(),
       color: 'from-cyan-600 to-blue-500'
     },
     {
       icon: Trophy,
-      title: 'Rekord wszech czasów',
+      title: 'All-Time Record',
       value: loading ? '-' : stats.allTimeRecord.toLocaleString(),
       color: 'from-blue-600 to-indigo-500'
     },
     {
       icon: BarChart3,
-      title: 'Utworzone ankiety',
+      title: 'Total Polls',
       value: loading ? '-' : stats.totalPolls.toLocaleString(),
       color: 'from-indigo-500 to-purple-500'
     },
     {
       icon: Globe,
-      title: 'Oddane głosy',
+      title: 'Total Votes',
       value: loading ? '-' : stats.totalVotes.toLocaleString(),
       color: 'from-purple-500 to-pink-500'
     }
@@ -138,11 +171,10 @@ const Statistics = () => {
     <div className="flex-1 overflow-y-auto px-6 py-6">
       <div className="max-w-md mx-auto space-y-6">
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-blue-400 mb-2">Statystyki społeczności</h2>
-          <p className="text-blue-200/70">Dane z naszej globalnej społeczności Push It!</p>
+          <h2 className="text-2xl font-bold text-blue-400 mb-2">Community Statistics</h2>
+          <p className="text-blue-200/70">Data from our global Push It! community</p>
         </div>
 
-        {/* Key Stats */}
         <div className="space-y-4">
           {statsData.map((stat, index) => {
             const Icon = stat.icon;
@@ -171,7 +203,7 @@ const Statistics = () => {
 
         {loading && (
           <div className="text-center py-4">
-            <div className="text-blue-300/70">Ładowanie statystyk...</div>
+            <div className="text-blue-300/70">Loading statistics...</div>
           </div>
         )}
       </div>

@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from 'react';
-import { Users, BarChart3, Clock, Vote, Archive, BookmarkPlus, Eye, TrendingUp, User, Settings, ChevronDown, ChevronRight, LogIn } from 'lucide-react';
+import { Users, BarChart3, Clock, Vote, Archive, BookmarkPlus, Eye, TrendingUp, User, Settings, ChevronDown, ChevronRight, LogIn, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,6 +14,13 @@ interface Poll {
   status: 'active' | 'archived';
   timeLeft?: string;
   expires_at: string;
+  options?: Array<{
+    id: string;
+    option_text: string;
+    votes: number;
+    percentage: number;
+  }>;
+  userVote?: string;
 }
 
 interface UserStats {
@@ -27,13 +35,14 @@ const MyApp = () => {
   const [profileTab, setProfileTab] = useState('account');
   const [liveExpanded, setLiveExpanded] = useState(true);
   const [archiveExpanded, setArchiveExpanded] = useState(false);
+  const [expandedPoll, setExpandedPoll] = useState<string | null>(null);
   const [createdPolls, setCreatedPolls] = useState<Poll[]>([]);
   const [votedPolls, setVotedPolls] = useState<Poll[]>([]);
   const [savedPolls, setSavedPolls] = useState<Poll[]>([]);
   const [userStats, setUserStats] = useState<UserStats>({ createdPolls: 0, totalVotes: 0, observers: 0 });
   const [loading, setLoading] = useState(true);
   
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -55,12 +64,20 @@ const MyApp = () => {
         .eq('created_by', user.id)
         .order('created_at', { ascending: false });
 
-      // Fetch voted polls
+      // Fetch voted polls with options and user votes
       const { data: voted } = await supabase
         .from('user_votes')
         .select(`
           poll_id,
-          polls!inner(id, question, total_votes, status, expires_at)
+          option_id,
+          polls!inner(
+            id, 
+            question, 
+            total_votes, 
+            status, 
+            expires_at,
+            poll_options(id, option_text, votes)
+          )
         `)
         .eq('user_id', user.id);
 
@@ -79,12 +96,12 @@ const MyApp = () => {
         const expiry = new Date(expiresAt);
         const diff = expiry.getTime() - now.getTime();
         
-        if (diff <= 0) return "Zakończone";
+        if (diff <= 0) return "Ended";
         
         const days = Math.floor(diff / (1000 * 60 * 60 * 24));
         const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         
-        if (days > 0) return `${days} dni`;
+        if (days > 0) return `${days} days`;
         if (hours > 0) return `${hours}h`;
         
         const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
@@ -98,8 +115,27 @@ const MyApp = () => {
           status: new Date(poll.expires_at) < new Date() ? 'archived' : poll.status
         })) || [];
 
+      const processVotedPolls = (votedData: any[]) => 
+        votedData?.map(v => {
+          const poll = v.polls;
+          const options = poll.poll_options?.map((opt: any) => ({
+            id: opt.id,
+            option_text: opt.option_text,
+            votes: opt.votes,
+            percentage: poll.total_votes > 0 ? Math.round((opt.votes / poll.total_votes) * 100) : 0
+          })) || [];
+          
+          return {
+            ...poll,
+            options,
+            userVote: v.option_id,
+            timeLeft: calculateTimeLeft(poll.expires_at),
+            status: new Date(poll.expires_at) < new Date() ? 'archived' : poll.status
+          };
+        }) || [];
+
       setCreatedPolls(processPolls(created || []));
-      setVotedPolls(processPolls(voted?.map(v => v.polls) || []));
+      setVotedPolls(processVotedPolls(voted || []));
       setSavedPolls(processPolls(saved?.map(s => s.polls) || []));
 
       // Calculate stats
@@ -107,13 +143,39 @@ const MyApp = () => {
       setUserStats({
         createdPolls: created?.length || 0,
         totalVotes: totalVotesReceived,
-        observers: Math.floor(Math.random() * 50) + 10 // Placeholder - w przyszłości można dodać system obserwujących
+        observers: Math.floor(Math.random() * 50) + 10 // Placeholder
       });
 
     } catch (error) {
       console.error('Error fetching user data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
+
+  const changeVote = async (pollId: string, newOptionId: string) => {
+    if (!user) return;
+    
+    try {
+      // Update the existing vote
+      const { error } = await supabase
+        .from('user_votes')
+        .update({ option_id: newOptionId })
+        .eq('poll_id', pollId)
+        .eq('user_id', user.id);
+
+      if (!error) {
+        // Refresh data
+        fetchUserData();
+        setExpandedPoll(null);
+      }
+    } catch (error) {
+      console.error('Error changing vote:', error);
     }
   };
 
@@ -125,9 +187,9 @@ const MyApp = () => {
             <User size={32} className="text-white" />
           </div>
           
-          <h3 className="text-xl font-bold text-blue-200 mb-2">Dołącz do społeczności</h3>
+          <h3 className="text-xl font-bold text-blue-200 mb-2">Join the community</h3>
           <p className="text-blue-200/70 text-sm mb-6">
-            Utwórz konto aby zarządzać swoimi ankietami, śledzić statystyki i korzystać z pełnej funkcjonalności
+            Create an account to manage your polls, track statistics and use full functionality
           </p>
           
           <Button 
@@ -135,11 +197,11 @@ const MyApp = () => {
             className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium py-3 rounded-xl mb-3 flex items-center justify-center gap-2"
           >
             <LogIn size={18} />
-            Zaloguj się / Zarejestruj
+            Login / Register
           </Button>
           
           <p className="text-blue-200/50 text-xs">
-            Kontynuuj jako gość aby używać podstawowych funkcji
+            Continue as guest to use basic features
           </p>
         </div>
       </div>
@@ -147,16 +209,16 @@ const MyApp = () => {
   }
 
   const sections = [
-    { id: 'mysubjects', label: 'Moje ankiety', icon: BarChart3 },
-    { id: 'community', label: 'Społeczność', icon: Users },
-    { id: 'profile', label: 'Profil', icon: User },
+    { id: 'mysubjects', label: 'My Polls', icon: BarChart3 },
+    { id: 'community', label: 'Community', icon: Users },
+    { id: 'profile', label: 'Profile', icon: User },
   ];
 
   const renderMySubjects = () => {
     const mySubjectsTabs = [
-      { id: 'created', label: 'Utworzone' },
-      { id: 'voted', label: 'Zagłosowane' },
-      { id: 'tovote', label: 'Do głosowania' },
+      { id: 'created', label: 'Created' },
+      { id: 'voted', label: 'Voted' },
+      { id: 'tovote', label: 'Saved' },
     ];
 
     const renderCreatedPolls = () => {
@@ -173,10 +235,10 @@ const MyApp = () => {
             >
               <div className="flex items-center gap-2">
                 {liveExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                <span className="text-blue-200 font-medium">Aktywne</span>
+                <span className="text-blue-200 font-medium">Active</span>
                 <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
               </div>
-              <span className="text-blue-300/70 text-sm">{livePolls.length} aktywnych</span>
+              <span className="text-blue-300/70 text-sm">{livePolls.length} active</span>
             </button>
             
             {liveExpanded && (
@@ -185,7 +247,7 @@ const MyApp = () => {
                   <div key={poll.id} className="bg-black/20 rounded-lg p-4">
                     <h4 className="text-blue-200 font-medium mb-2">{poll.question}</h4>
                     <div className="flex justify-between items-center text-sm">
-                      <span className="text-blue-300/70">{poll.total_votes} głosów</span>
+                      <span className="text-blue-300/70">{poll.total_votes} votes</span>
                       {poll.timeLeft && (
                         <span className="text-green-400 flex items-center gap-1">
                           <Clock size={12} />
@@ -196,7 +258,7 @@ const MyApp = () => {
                   </div>
                 ))}
                 {livePolls.length === 0 && (
-                  <p className="text-blue-300/50 text-sm p-4">Brak aktywnych ankiet</p>
+                  <p className="text-blue-300/50 text-sm p-4">No active polls</p>
                 )}
               </div>
             )}
@@ -210,9 +272,9 @@ const MyApp = () => {
             >
               <div className="flex items-center gap-2">
                 {archiveExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                <span className="text-blue-200 font-medium">Archiwum</span>
+                <span className="text-blue-200 font-medium">Archive</span>
               </div>
-              <span className="text-blue-300/70 text-sm">{archivePolls.length} zakończonych</span>
+              <span className="text-blue-300/70 text-sm">{archivePolls.length} ended</span>
             </button>
             
             {archiveExpanded && (
@@ -221,16 +283,16 @@ const MyApp = () => {
                   <div key={poll.id} className="bg-black/20 rounded-lg p-4">
                     <h4 className="text-blue-200 font-medium mb-2">{poll.question}</h4>
                     <div className="flex justify-between items-center text-sm">
-                      <span className="text-blue-300/70">{poll.total_votes} głosów</span>
+                      <span className="text-blue-300/70">{poll.total_votes} votes</span>
                       <span className="text-gray-400 flex items-center gap-1">
                         <Archive size={12} />
-                        Zakończone
+                        Ended
                       </span>
                     </div>
                   </div>
                 ))}
                 {archivePolls.length === 0 && (
-                  <p className="text-blue-300/50 text-sm p-4">Brak zakończonych ankiet</p>
+                  <p className="text-blue-300/50 text-sm p-4">No ended polls</p>
                 )}
               </div>
             )}
@@ -243,18 +305,63 @@ const MyApp = () => {
       <div className="space-y-3">
         {votedPolls.map((poll) => (
           <div key={poll.id} className="bg-black/20 rounded-lg p-4">
-            <h4 className="text-blue-200 font-medium mb-2">{poll.question}</h4>
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-blue-300/70">{poll.total_votes} głosów łącznie</span>
+            <div className="flex justify-between items-start mb-2">
+              <h4 className="text-blue-200 font-medium flex-1">{poll.question}</h4>
+              <button
+                onClick={() => setExpandedPoll(expandedPoll === poll.id ? null : poll.id)}
+                className="text-blue-400 hover:text-blue-300 ml-2"
+              >
+                {expandedPoll === poll.id ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+              </button>
+            </div>
+            
+            {expandedPoll === poll.id && poll.options && (
+              <div className="mt-4 space-y-2">
+                {poll.options.map((option) => {
+                  const isUserVote = poll.userVote === option.id;
+                  return (
+                    <div
+                      key={option.id}
+                      className={`p-3 rounded-lg border transition-colors cursor-pointer ${
+                        isUserVote 
+                          ? 'bg-blue-500/20 border-blue-400' 
+                          : 'bg-black/20 border-blue-500/20 hover:bg-blue-500/10'
+                      }`}
+                      onClick={() => changeVote(poll.id, option.id)}
+                    >
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-blue-200">{option.option_text}</span>
+                        <span className="text-blue-300/80 text-sm">{option.percentage}%</span>
+                      </div>
+                      <div className="bg-black/40 rounded-full h-2">
+                        <div
+                          className="bg-gradient-to-r from-blue-400 to-cyan-500 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${option.percentage}%` }}
+                        />
+                      </div>
+                      {isUserVote && (
+                        <div className="text-xs text-blue-400 mt-1">Your vote</div>
+                      )}
+                    </div>
+                  );
+                })}
+                <div className="text-xs text-blue-300/70 mt-2">
+                  Click any option to change your vote (one-time only)
+                </div>
+              </div>
+            )}
+            
+            <div className="flex justify-between items-center text-sm mt-2">
+              <span className="text-blue-300/70">{poll.total_votes} total votes</span>
               <span className="text-green-400 flex items-center gap-1">
                 <Vote size={12} />
-                Zagłosowano
+                Voted
               </span>
             </div>
           </div>
         ))}
         {votedPolls.length === 0 && (
-          <p className="text-blue-300/50 text-sm p-4">Nie zagłosowałeś jeszcze w żadnej ankiecie</p>
+          <p className="text-blue-300/50 text-sm p-4">You haven't voted in any polls yet</p>
         )}
       </div>
     );
@@ -265,7 +372,7 @@ const MyApp = () => {
           <div key={poll.id} className="bg-black/20 rounded-lg p-4">
             <h4 className="text-blue-200 font-medium mb-2">{poll.question}</h4>
             <div className="flex justify-between items-center text-sm">
-              <span className="text-blue-300/70">{poll.total_votes} głosów</span>
+              <span className="text-blue-300/70">{poll.total_votes} votes</span>
               <div className="flex items-center gap-2">
                 {poll.timeLeft && (
                   <span className="text-blue-400 flex items-center gap-1">
@@ -275,21 +382,21 @@ const MyApp = () => {
                 )}
                 <span className="text-yellow-400 flex items-center gap-1">
                   <BookmarkPlus size={12} />
-                  Zapisane
+                  Saved
                 </span>
               </div>
             </div>
           </div>
         ))}
         {savedPolls.length === 0 && (
-          <p className="text-blue-300/50 text-sm p-4">Nie masz zapisanych ankiet</p>
+          <p className="text-blue-300/50 text-sm p-4">No saved polls</p>
         )}
       </div>
     );
 
     const renderMySubjectsContent = () => {
       if (loading) {
-        return <div className="text-center py-8 text-blue-300/70">Ładowanie...</div>;
+        return <div className="text-center py-8 text-blue-300/70">Loading...</div>;
       }
 
       switch (mySubjectsTab) {
@@ -331,20 +438,20 @@ const MyApp = () => {
   const renderCommunity = () => (
     <div className="space-y-6">
       <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-blue-400 mb-2">Twoja społeczność</h2>
-        <p className="text-blue-200/70">Zobacz swój wpływ i połączenia</p>
+        <h2 className="text-2xl font-bold text-blue-400 mb-2">Your community</h2>
+        <p className="text-blue-200/70">See your impact and connections</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-4 border border-blue-500/20 text-center">
           <Eye size={24} className="text-blue-400 mx-auto mb-2" />
           <div className="text-2xl font-bold text-blue-400">{userStats.observers}</div>
-          <div className="text-blue-300/60 text-sm">Obserwujących</div>
+          <div className="text-blue-300/60 text-sm">Followers</div>
         </div>
         <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-4 border border-blue-500/20 text-center">
           <Vote size={24} className="text-cyan-400 mx-auto mb-2" />
           <div className="text-2xl font-bold text-blue-400">{userStats.totalVotes}</div>
-          <div className="text-blue-300/60 text-sm">Głosów otrzymanych</div>
+          <div className="text-blue-300/60 text-sm">Votes received</div>
         </div>
       </div>
     </div>
@@ -352,8 +459,8 @@ const MyApp = () => {
 
   const renderProfile = () => {
     const profileTabs = [
-      { id: 'account', label: 'Konto' },
-      { id: 'settings', label: 'Ustawienia' },
+      { id: 'account', label: 'Account' },
+      { id: 'settings', label: 'Settings' },
     ];
 
     return (
@@ -381,26 +488,35 @@ const MyApp = () => {
               <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <User size={40} className="text-white" />
               </div>
-              <h2 className="text-xl font-bold text-blue-200">Witaj ponownie!</h2>
+              <h2 className="text-xl font-bold text-blue-200">Welcome back!</h2>
               <p className="text-blue-300/70">{user.email}</p>
             </div>
 
             <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-4 border border-blue-500/20">
               <div className="flex items-center gap-3 mb-3">
                 <BarChart3 size={20} className="text-blue-400" />
-                <span className="text-blue-200 font-medium">Twoje statystyki</span>
+                <span className="text-blue-200 font-medium">Your statistics</span>
               </div>
               <div className="grid grid-cols-2 gap-4 text-center">
                 <div>
                   <div className="text-2xl font-bold text-blue-400">{userStats.createdPolls}</div>
-                  <div className="text-blue-300/60 text-sm">Utworzonych ankiet</div>
+                  <div className="text-blue-300/60 text-sm">Created polls</div>
                 </div>
                 <div>
                   <div className="text-2xl font-bold text-blue-400">{userStats.totalVotes}</div>
-                  <div className="text-blue-300/60 text-sm">Otrzymanych głosów</div>
+                  <div className="text-blue-300/60 text-sm">Votes received</div>
                 </div>
               </div>
             </div>
+
+            <Button
+              onClick={handleSignOut}
+              variant="outline"
+              className="w-full border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+            >
+              <LogOut size={18} className="mr-2" />
+              Sign out
+            </Button>
           </div>
         )}
 
@@ -409,23 +525,23 @@ const MyApp = () => {
             <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-4 border border-blue-500/20">
               <div className="flex items-center gap-3 mb-4">
                 <Settings size={20} className="text-blue-400" />
-                <span className="text-blue-200 font-medium">Ustawienia aplikacji</span>
+                <span className="text-blue-200 font-medium">App settings</span>
               </div>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-blue-200">Powiadomienia</span>
+                  <span className="text-blue-200">Notifications</span>
                   <button className="w-12 h-6 bg-blue-500 rounded-full relative">
                     <div className="w-5 h-5 bg-white rounded-full absolute right-0.5 top-0.5"></div>
                   </button>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-blue-200">Tryb ciemny</span>
+                  <span className="text-blue-200">Dark mode</span>
                   <button className="w-12 h-6 bg-blue-500 rounded-full relative">
                     <div className="w-5 h-5 bg-white rounded-full absolute right-0.5 top-0.5"></div>
                   </button>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-blue-200">Tryb prywatny</span>
+                  <span className="text-blue-200">Private mode</span>
                   <button className="w-12 h-6 bg-gray-600 rounded-full relative">
                     <div className="w-5 h-5 bg-white rounded-full absolute left-0.5 top-0.5"></div>
                   </button>

@@ -4,8 +4,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { LogIn, Mail, Lock, UserPlus } from 'lucide-react';
+import { LogIn, Mail, Lock, UserPlus, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -14,6 +15,7 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const { signUp, signIn, signInWithGoogle } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,20 +28,20 @@ const Auth = () => {
 
       if (error) {
         toast({
-          title: "Błąd",
+          title: "Error",
           description: error.message,
           variant: "destructive",
         });
       } else if (!isLogin) {
         toast({
-          title: "Sukces",
-          description: "Sprawdź swoją skrzynkę email aby potwierdzić konto",
+          title: "Success",
+          description: "Check your email to confirm your account",
         });
       }
     } catch (error) {
       toast({
-        title: "Błąd",
-        description: "Wystąpił nieoczekiwany błąd",
+        title: "Error",
+        description: "An unexpected error occurred",
         variant: "destructive",
       });
     } finally {
@@ -53,15 +55,15 @@ const Auth = () => {
       const { error } = await signInWithGoogle();
       if (error) {
         toast({
-          title: "Błąd",
+          title: "Error",
           description: error.message,
           variant: "destructive",
         });
       }
     } catch (error) {
       toast({
-        title: "Błąd",
-        description: "Wystąpił nieoczekiwany błąd",
+        title: "Error",
+        description: "An unexpected error occurred",
         variant: "destructive",
       });
     } finally {
@@ -71,13 +73,23 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-900 via-red-900 to-yellow-900 flex items-center justify-center px-4">
-      <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-8 border border-orange-500/30 w-full max-w-md">
-        <div className="text-center mb-8">
+      <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-8 border border-orange-500/30 w-full max-w-md relative">
+        <Button
+          onClick={() => navigate('/')}
+          variant="ghost"
+          size="sm"
+          className="absolute top-4 left-4 text-orange-300 hover:text-orange-200"
+        >
+          <ArrowLeft size={16} className="mr-1" />
+          Back
+        </Button>
+
+        <div className="text-center mb-8 mt-8">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-400 to-yellow-500 bg-clip-text text-transparent mb-2">
-            {isLogin ? 'Zaloguj się' : 'Zarejestruj się'}
+            {isLogin ? 'Login' : 'Sign Up'}
           </h1>
           <p className="text-orange-300/70">
-            {isLogin ? 'Witaj ponownie!' : 'Dołącz do społeczności Push It!'}
+            {isLogin ? 'Welcome back!' : 'Join the Push It! community'}
           </p>
         </div>
 
@@ -92,14 +104,14 @@ const Auth = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="pl-10 bg-black/20 border-orange-500/30 text-orange-100 placeholder:text-orange-300/50"
-                placeholder="twoj@email.com"
+                placeholder="your@email.com"
                 required
               />
             </div>
           </div>
 
           <div>
-            <Label htmlFor="password" className="text-orange-200">Hasło</Label>
+            <Label htmlFor="password" className="text-orange-200">Password</Label>
             <div className="relative">
               <Lock className="absolute left-3 top-3 h-4 w-4 text-orange-300/50" />
               <Input
@@ -120,11 +132,11 @@ const Auth = () => {
             className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-medium"
           >
             {loading ? (
-              'Ładowanie...'
+              'Loading...'
             ) : (
               <>
                 {isLogin ? <LogIn className="mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />}
-                {isLogin ? 'Zaloguj się' : 'Zarejestruj się'}
+                {isLogin ? 'Login' : 'Sign Up'}
               </>
             )}
           </Button>
@@ -136,7 +148,7 @@ const Auth = () => {
               <div className="w-full border-t border-orange-500/30"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-black/40 text-orange-300/70">lub</span>
+              <span className="px-2 bg-black/40 text-orange-300/70">or</span>
             </div>
           </div>
         </div>
@@ -153,7 +165,7 @@ const Auth = () => {
             <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
             <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
           </svg>
-          Zaloguj się przez Google
+          Sign in with Google
         </Button>
 
         <div className="mt-6 text-center">
@@ -162,7 +174,7 @@ const Auth = () => {
             onClick={() => setIsLogin(!isLogin)}
             className="text-orange-300/70 hover:text-orange-300 text-sm"
           >
-            {isLogin ? 'Nie masz konta? Zarejestruj się' : 'Masz już konto? Zaloguj się'}
+            {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Login'}
           </button>
         </div>
       </div>

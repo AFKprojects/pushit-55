@@ -22,6 +22,7 @@ export const useButtonHolds = () => {
         .eq('is_active', true);
       
       if (!error && data) {
+        console.log('Active holds count:', data.length);
         setActiveHolders(data.length);
       }
     };
@@ -35,7 +36,8 @@ export const useButtonHolds = () => {
         event: '*',
         schema: 'public',
         table: 'button_holds'
-      }, () => {
+      }, (payload) => {
+        console.log('Button holds change:', payload);
         fetchActiveHolds();
       })
       .subscribe();
@@ -49,6 +51,7 @@ export const useButtonHolds = () => {
     if (!user) return;
 
     try {
+      console.log('Starting hold for user:', user.id);
       const { data, error } = await supabase
         .from('button_holds')
         .insert({
@@ -59,7 +62,10 @@ export const useButtonHolds = () => {
         .single();
 
       if (!error && data) {
+        console.log('Hold started with ID:', data.id);
         setCurrentHoldId(data.id);
+      } else {
+        console.error('Error starting hold:', error);
       }
     } catch (error) {
       console.error('Error starting hold:', error);
@@ -70,18 +76,20 @@ export const useButtonHolds = () => {
     if (!user || !currentHoldId) return;
 
     try {
-      const startTime = new Date();
+      console.log('Ending hold:', currentHoldId);
       const { error } = await supabase
         .from('button_holds')
         .update({
           ended_at: new Date().toISOString(),
-          is_active: false,
-          duration_seconds: Math.floor((Date.now() - startTime.getTime()) / 1000)
+          is_active: false
         })
         .eq('id', currentHoldId);
 
       if (!error) {
+        console.log('Hold ended successfully');
         setCurrentHoldId(null);
+      } else {
+        console.error('Error ending hold:', error);
       }
     } catch (error) {
       console.error('Error ending hold:', error);
