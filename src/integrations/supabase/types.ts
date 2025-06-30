@@ -135,6 +135,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          country: string | null
           created_at: string | null
           email: string | null
           id: string
@@ -142,6 +143,7 @@ export type Database = {
           username: string | null
         }
         Insert: {
+          country?: string | null
           created_at?: string | null
           email?: string | null
           id: string
@@ -149,6 +151,7 @@ export type Database = {
           username?: string | null
         }
         Update: {
+          country?: string | null
           created_at?: string | null
           email?: string | null
           id?: string

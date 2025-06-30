@@ -30,6 +30,31 @@ const Statistics = () => {
   const [countryStats, setCountryStats] = useState<CountryStats[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Country code mapping for flags
+  const countryCodeMap: { [key: string]: string } = {
+    'United States': 'US',
+    'Germany': 'DE',
+    'United Kingdom': 'GB',
+    'Belgium': 'BE',
+    'France': 'FR',
+    'Canada': 'CA',
+    'Netherlands': 'NL',
+    'Australia': 'AU',
+    'Spain': 'ES',
+    'Italy': 'IT',
+    'Poland': 'PL',
+    'Czech Republic': 'CZ',
+    'Austria': 'AT',
+    'Switzerland': 'CH',
+    'Sweden': 'SE',
+    'Norway': 'NO',
+    'Denmark': 'DK',
+    'Finland': 'FI',
+    'Ireland': 'IE',
+    'Portugal': 'PT',
+    'Unknown': 'XX'
+  };
+
   useEffect(() => {
     const fetchStats = async () => {
       try {
@@ -92,46 +117,33 @@ const Statistics = () => {
           });
         }
 
-        // Generate realistic country statistics with flags
-        const totalUsers = usersCount || 0;
-        const mockCountryStats: CountryStats[] = [];
-        
-        if (totalUsers > 0) {
-          // Distribute users across countries with realistic percentages
-          const countryDistribution = [
-            { country: 'United States', code: 'US', percentage: 0.25 },
-            { country: 'Germany', code: 'DE', percentage: 0.15 },
-            { country: 'United Kingdom', code: 'GB', percentage: 0.12 },
-            { country: 'Belgium', code: 'BE', percentage: 0.10 },
-            { country: 'France', code: 'FR', percentage: 0.10 },
-            { country: 'Canada', code: 'CA', percentage: 0.08 },
-            { country: 'Netherlands', code: 'NL', percentage: 0.07 },
-            { country: 'Australia', code: 'AU', percentage: 0.06 },
-            { country: 'Spain', code: 'ES', percentage: 0.04 },
-            { country: 'Italy', code: 'IT', percentage: 0.03 }
-          ];
+        // Get real country statistics from profiles table
+        const { data: countryData } = await supabase
+          .from('profiles')
+          .select('country')
+          .not('country', 'is', null);
 
-          let remainingUsers = totalUsers;
+        const realCountryStats: CountryStats[] = [];
+        
+        if (countryData && countryData.length > 0) {
+          // Count users by country
+          const countryCounts: { [key: string]: number } = {};
           
-          countryDistribution.forEach((country, index) => {
-            let userCount;
-            if (index === countryDistribution.length - 1) {
-              userCount = remainingUsers;
-            } else {
-              userCount = Math.floor(totalUsers * country.percentage);
-              remainingUsers -= userCount;
-            }
-            
-            if (userCount > 0) {
-              mockCountryStats.push({
-                country: country.country,
-                code: country.code,
-                count: userCount
-              });
-            }
+          countryData.forEach(profile => {
+            const country = profile.country || 'Unknown';
+            countryCounts[country] = (countryCounts[country] || 0) + 1;
           });
 
-          mockCountryStats.sort((a, b) => b.count - a.count);
+          // Convert to array and sort by count
+          Object.entries(countryCounts)
+            .sort(([,a], [,b]) => b - a)
+            .forEach(([country, count]) => {
+              realCountryStats.push({
+                country,
+                code: countryCodeMap[country] || 'XX',
+                count
+              });
+            });
         }
 
         setStats({
@@ -143,7 +155,7 @@ const Statistics = () => {
           totalVotes: votesCount || 0
         });
 
-        setCountryStats(mockCountryStats);
+        setCountryStats(realCountryStats);
       } catch (error) {
         console.error('Error fetching stats:', error);
       } finally {
@@ -256,7 +268,7 @@ const Statistics = () => {
           })}
         </div>
 
-        {/* Country Statistics Section with Flags */}
+        {/* Country Statistics Section with Real Data */}
         <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-4 border border-blue-500/20">
           <div className="flex items-center gap-3 mb-4">
             <div className="p-2 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500">
@@ -278,14 +290,16 @@ const Statistics = () => {
                       {index + 1}
                     </div>
                     <div className="flex items-center gap-2">
-                      <img 
-                        src={`https://flagcdn.com/w20/${country.code.toLowerCase()}.png`}
-                        alt={`${country.country} flag`}
-                        className="w-5 h-auto rounded"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
+                      {country.code !== 'XX' && (
+                        <img 
+                          src={`https://flagcdn.com/w20/${country.code.toLowerCase()}.png`}
+                          alt={`${country.country} flag`}
+                          className="w-5 h-auto rounded"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      )}
                       <span className="text-blue-200">{country.country}</span>
                     </div>
                   </div>
@@ -295,7 +309,7 @@ const Statistics = () => {
             </div>
           ) : (
             <div className="text-center py-4">
-              <div className="text-blue-300/70">No country data available</div>
+              <div className="text-blue-300/70">No country data available yet</div>
             </div>
           )}
         </div>

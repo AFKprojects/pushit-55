@@ -8,9 +8,9 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, country?: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signInWithGoogle: () => Promise<{ error: any }>;
+  signInWithGoogle: (country?: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
 
@@ -47,14 +47,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string, country?: string) => {
     const redirectUrl = `${window.location.origin}/`;
     
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: redirectUrl
+        emailRedirectTo: redirectUrl,
+        data: {
+          country: country || 'Unknown'
+        }
       }
     });
     return { error };
@@ -68,11 +71,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error };
   };
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (country?: string) => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/`
+        redirectTo: `${window.location.origin}/`,
+        data: {
+          country: country || 'Unknown'
+        }
       }
     });
     return { error };
