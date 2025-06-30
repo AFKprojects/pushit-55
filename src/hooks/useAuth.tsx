@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { useGeolocation } from './useGeolocation';
 
 interface AuthContextType {
   user: User | null;
@@ -21,6 +22,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { country } = useGeolocation();
 
   useEffect(() => {
     // Set up auth state listener
@@ -47,8 +49,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const signUp = async (email: string, password: string, country?: string) => {
+  const signUp = async (email: string, password: string, userCountry?: string) => {
     const redirectUrl = `${window.location.origin}/`;
+    const detectedCountry = userCountry || country || 'Unknown';
     
     const { error } = await supabase.auth.signUp({
       email,
@@ -56,7 +59,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       options: {
         emailRedirectTo: redirectUrl,
         data: {
-          country: country || 'Unknown'
+          country: detectedCountry
         }
       }
     });
@@ -71,13 +74,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error };
   };
 
-  const signInWithGoogle = async (country?: string) => {
+  const signInWithGoogle = async (userCountry?: string) => {
+    const detectedCountry = userCountry || country || 'Unknown';
+    
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/`,
-        data: {
-          country: country || 'Unknown'
+        queryParams: {
+          country: detectedCountry
         }
       }
     });
