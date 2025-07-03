@@ -54,7 +54,9 @@ const PollCard = ({
   alwaysExpanded = false,
   canVote = true
 }: PollCardProps) => {
-  const [isExpanded, setIsExpanded] = useState(alwaysExpanded);
+  // If alwaysExpanded is true, always show expanded view regardless of expandable
+  // If expandable is false, always show expanded view
+  const [isExpanded, setIsExpanded] = useState(alwaysExpanded || !expandable);
 
   const handleVoteStart = (optionIndex: number) => {
     if (!canVote || poll.hasVoted || !onVote) return;
@@ -94,7 +96,7 @@ const PollCard = ({
           <h3 className="text-lg font-semibold text-orange-200 mb-2">
             {poll.question}
           </h3>
-          {expandable && (
+          {expandable && !alwaysExpanded && (
             <Button
               variant="ghost"
               size="sm"
@@ -210,9 +212,12 @@ const PollCard = ({
     </>
   );
 
+  // Show expanded view if: alwaysExpanded is true, expandable is false, or isExpanded is true
+  const shouldShowExpanded = alwaysExpanded || !expandable || isExpanded;
+
   return (
     <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-6 border border-orange-500/30">
-      {expandable && !isExpanded ? renderCollapsedView() : renderExpandedView()}
+      {shouldShowExpanded ? renderExpandedView() : renderCollapsedView()}
     </div>
   );
 };
