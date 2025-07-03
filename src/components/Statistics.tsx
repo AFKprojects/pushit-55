@@ -117,30 +117,22 @@ const Statistics = () => {
           });
         }
 
-        // Get session-based country statistics from active users
+        // Get real country statistics from profiles table  
         const realCountryStats: CountryStats[] = [];
         
-        // Since we can't directly access session data from all users,
-        // we'll use a different approach - get active button holds from last 24h
-        // and detect countries for those active users in real-time
-        const { data: activeUsers } = await supabase
-          .from('button_holds')
-          .select('user_id')
-          .gte('started_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-          .not('user_id', 'is', null);
+        const { data: countryData, error: countryError } = await supabase
+          .from('profiles')
+          .select('country')
+          .not('country', 'is', null);
 
-        console.log('Active users data:', activeUsers);
+        console.log('Country data fetch result:', { countryData, countryError });
 
-        if (activeUsers && activeUsers.length > 0) {
-          // For demo purposes, let's simulate country detection for active users
-          // In a real app, you'd need to track session-based geolocation data
+        if (countryData && countryData.length > 0) {
+          // Count users by country
           const countryCounts: { [key: string]: number } = {};
           
-          // Simulate country distribution for active users
-          const countries = ['United States', 'Germany', 'Poland', 'United Kingdom', 'France'];
-          
-          activeUsers.forEach((_, index) => {
-            const country = countries[index % countries.length];
+          countryData.forEach(profile => {
+            const country = profile.country || 'Unknown';
             countryCounts[country] = (countryCounts[country] || 0) + 1;
           });
 
