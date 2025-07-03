@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -9,8 +8,10 @@ interface SavedPoll {
   id: string;
   question: string;
   creator_username: string;
+  status: 'active' | 'archived';
   total_votes: number;
   expires_at: string;
+  created_at: string;
   options: Array<{
     id: string;
     option_text: string;
@@ -62,8 +63,10 @@ const SavedPolls = () => {
             id,
             question,
             creator_username,
+            status,
             total_votes,
             expires_at,
+            created_at,
             poll_options (
               id,
               option_text,
@@ -98,8 +101,10 @@ const SavedPolls = () => {
             id: poll.id,
             question: poll.question,
             creator_username: poll.creator_username,
+            status: poll.status,
             total_votes: poll.total_votes,
             expires_at: poll.expires_at,
+            created_at: poll.created_at,
             options,
             timeLeft: calculateTimeLeft(poll.expires_at),
             hasVoted: !!userVote,
