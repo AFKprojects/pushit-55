@@ -90,7 +90,7 @@ const Statistics = () => {
     try {
       setLoading(true);
 
-      // Get country statistics
+      // Get country statistics from profiles table
       const { data: profiles } = await supabase
         .from('profiles')
         .select('country');
