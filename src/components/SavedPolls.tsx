@@ -255,7 +255,6 @@ const SavedPolls = () => {
               <h3 className="text-lg font-semibold text-orange-200 mb-2">
                 {poll.question}
               </h3>
-              <p className="text-orange-300/60 text-sm">created by {poll.creator_username}</p>
             </div>
             <div className="flex items-center gap-2">
               <div className="flex items-center text-orange-300/70 text-sm">

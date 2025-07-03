@@ -118,10 +118,12 @@ const Statistics = () => {
         }
 
         // Get real country statistics from profiles table
-        const { data: countryData } = await supabase
+        const { data: countryData, error: countryError } = await supabase
           .from('profiles')
           .select('country')
           .not('country', 'is', null);
+
+        console.log('Country data fetch result:', { countryData, countryError });
 
         const realCountryStats: CountryStats[] = [];
         
@@ -155,6 +157,7 @@ const Statistics = () => {
           totalVotes: votesCount || 0
         });
 
+        console.log('Setting country stats:', realCountryStats);
         setCountryStats(realCountryStats);
       } catch (error) {
         console.error('Error fetching stats:', error);
