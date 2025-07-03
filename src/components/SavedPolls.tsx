@@ -1,5 +1,6 @@
 
 import { useSavedPolls } from '@/hooks/useSavedPolls';
+import { useButtonHolds } from '@/hooks/useButtonHolds';
 import { useSavedPollVoting } from '@/hooks/useSavedPollVoting';
 import PollCard from './PollCard';
 import SavedPollsLoading from './SavedPollsLoading';
@@ -7,18 +8,28 @@ import SavedPollsEmpty from './SavedPollsEmpty';
 
 const SavedPolls = () => {
   const { savedPolls, loading, removeSavedPoll, refreshSavedPolls } = useSavedPolls();
-  const { votingState, handleVoteStart, handleVoteEnd } = useSavedPollVoting();
+  const { startHold, endHold } = useButtonHolds();
+  const { votingState, handleVoteStart: originalHandleVoteStart, handleVoteEnd: originalHandleVoteEnd } = useSavedPollVoting();
 
-  const handleVote = async (pollId: string, optionIndex: number) => {
+  const handleVoteStart = async (pollId: string, optionIndex: number) => {
     const poll = savedPolls.find(p => p.id === pollId);
     if (poll) {
-      handleVoteStart(pollId, optionIndex, poll);
+      // Start the button hold tracking
+      startHold();
+      
+      originalHandleVoteStart(pollId, optionIndex, poll);
       // Remove from saved polls after voting
       setTimeout(async () => {
         await removeSavedPoll(pollId);
         refreshSavedPolls();
       }, 3500); // Wait for vote animation to complete
     }
+  };
+
+  const handleVoteEnd = () => {
+    // End the button hold tracking
+    endHold();
+    originalHandleVoteEnd();
   };
 
   if (loading) {
@@ -35,7 +46,7 @@ const SavedPolls = () => {
         <PollCard
           key={poll.id}
           poll={poll}
-          onVote={handleVote}
+          onVote={handleVoteStart}
           onRemove={removeSavedPoll}
           votingState={votingState}
           onVoteEnd={handleVoteEnd}

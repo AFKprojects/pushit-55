@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
@@ -62,7 +63,6 @@ const Statistics = () => {
         schema: 'public',
         table: 'profiles'
       }, () => {
-        console.log('Profiles changed, refreshing statistics');
         fetchStatistics();
       })
       .on('postgres_changes', {
@@ -70,7 +70,6 @@ const Statistics = () => {
         schema: 'public',
         table: 'polls'
       }, () => {
-        console.log('Polls changed, refreshing statistics');
         fetchStatistics();
       })
       .on('postgres_changes', {
@@ -78,7 +77,6 @@ const Statistics = () => {
         schema: 'public',
         table: 'user_votes'
       }, () => {
-        console.log('Votes changed, refreshing statistics');
         fetchStatistics();
       })
       .subscribe();
@@ -91,7 +89,6 @@ const Statistics = () => {
   const fetchStatistics = async () => {
     try {
       setLoading(true);
-      console.log('Fetching statistics...');
 
       // Get country statistics from profiles table
       const { data: profiles, error: profilesError } = await supabase
@@ -102,16 +99,12 @@ const Statistics = () => {
         console.error('Error fetching profiles:', profilesError);
       }
 
-      console.log('Profiles data:', profiles);
-
       if (profiles) {
         const countryCounts = profiles.reduce((acc: { [key: string]: number }, profile) => {
           const country = profile.country || 'Unknown';
           acc[country] = (acc[country] || 0) + 1;
           return acc;
         }, {});
-
-        console.log('Country counts:', countryCounts);
 
         const countryStatsData = Object.entries(countryCounts)
           .map(([country, users]) => ({
@@ -122,7 +115,6 @@ const Statistics = () => {
           .sort((a, b) => b.users - a.users)
           .slice(0, 10);
 
-        console.log('Country stats data:', countryStatsData);
         setCountryStats(countryStatsData);
       }
 
@@ -238,7 +230,7 @@ const Statistics = () => {
           <h2 className="text-xl font-semibold text-orange-200 mb-6">Users by Country</h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="space-y-3">
-              {countryStats.map((stat, index) => (
+              {countryStats.map((stat) => (
                 <div key={stat.country} className="flex items-center justify-between p-3 bg-black/20 rounded-lg">
                   <div className="flex items-center">
                     <span className="text-2xl mr-3">{stat.flag}</span>

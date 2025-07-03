@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { usePolls } from '@/hooks/usePolls';
 import { useAuth } from '@/hooks/useAuth';
+import { useButtonHolds } from '@/hooks/useButtonHolds';
 import PollCard from './PollCard';
 
 interface PollsProps {
@@ -11,10 +12,11 @@ interface PollsProps {
 const Polls = ({ onNavigateToCreate }: PollsProps) => {
   const { polls, loading, voteOnPoll, savePoll, hidePoll } = usePolls();
   const { user } = useAuth();
+  const { startHold, endHold } = useButtonHolds();
   const [votingOption, setVotingOption] = useState<{pollId: string, optionIndex: number} | null>(null);
   const [votingProgress, setVotingProgress] = useState(0);
   const [countdownSeconds, setCountdownSeconds] = useState(0);
-  const votingTimer = useState<NodeJS.Timeout | null>(null)[0];
+  const [votingTimer, setVotingTimer] = useState<NodeJS.Timeout | null>(null);
 
   if (loading) {
     return (
@@ -30,21 +32,26 @@ const Polls = ({ onNavigateToCreate }: PollsProps) => {
     const poll = polls.find(p => p.id === pollId);
     if (poll?.hasVoted) return;
     
+    // Start the button hold tracking
+    startHold();
+    
     setVotingOption({ pollId, optionIndex });
     setVotingProgress(0);
     setCountdownSeconds(3);
     
-    const interval = setInterval(() => {
+    // Progress bar animation (3 seconds total)
+    const progressInterval = setInterval(() => {
       setVotingProgress(prev => {
         if (prev >= 100) {
-          clearInterval(interval);
+          clearInterval(progressInterval);
           handleVoteComplete(pollId, optionIndex);
           return 100;
         }
-        return prev + (100 / 30);
+        return prev + (100 / 30); // 100% over 30 intervals = 3 seconds
       });
     }, 100);
 
+    // Countdown timer (3 seconds)
     const countdownInterval = setInterval(() => {
       setCountdownSeconds(prev => {
         if (prev <= 1) {
@@ -54,12 +61,19 @@ const Polls = ({ onNavigateToCreate }: PollsProps) => {
         return prev - 1;
       });
     }, 1000);
+
+    setVotingTimer(progressInterval);
   };
 
   const handleVoteEnd = () => {
     if (votingTimer) {
       clearInterval(votingTimer);
+      setVotingTimer(null);
     }
+    
+    // End the button hold tracking
+    endHold();
+    
     setVotingOption(null);
     setVotingProgress(0);
     setCountdownSeconds(0);
@@ -121,6 +135,7 @@ const Polls = ({ onNavigateToCreate }: PollsProps) => {
               votingState={votingState}
               onVoteEnd={handleVoteEnd}
               showActions={!!user}
+              expandable={false}
               alwaysExpanded={true}
               canVote={!!user}
             />
