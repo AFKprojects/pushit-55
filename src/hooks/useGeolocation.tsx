@@ -21,7 +21,10 @@ export const useGeolocation = () => {
         const response = await fetch('https://ipapi.co/json/');
         const data = await response.json();
         
+        console.log('Geolocation API response:', data);
+        
         if (data.country_name) {
+          console.log('Setting country to:', data.country_name);
           setGeoData({
             country: data.country_name,
             loading: false,
