@@ -1,9 +1,8 @@
 
 import { useState } from 'react';
-import { TrendingUp, Users, Clock, BookmarkPlus, EyeOff } from 'lucide-react';
 import { usePolls } from '@/hooks/usePolls';
 import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/button';
+import PollCard from './PollCard';
 
 interface PollsProps {
   onNavigateToCreate?: () => void;
@@ -84,6 +83,13 @@ const Polls = ({ onNavigateToCreate }: PollsProps) => {
     await hidePoll(pollId);
   };
 
+  const votingState = votingOption ? {
+    pollId: votingOption.pollId,
+    optionIndex: votingOption.optionIndex,
+    progress: votingProgress,
+    countdown: countdownSeconds
+  } : null;
+
   return (
     <div className="flex-1 px-6 py-8 overflow-y-auto">
       <div className="max-w-2xl mx-auto">
@@ -106,102 +112,18 @@ const Polls = ({ onNavigateToCreate }: PollsProps) => {
 
         <div className="space-y-6">
           {polls.map((poll) => (
-            <div key={poll.id} className="bg-black/40 backdrop-blur-sm rounded-2xl p-6 border border-orange-500/30">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-orange-200 mb-2">
-                    {poll.question}
-                  </h3>
-                  <p className="text-orange-300/60 text-sm">created by {poll.creator_username}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center text-orange-300/70 text-sm">
-                    <Clock size={16} className="mr-1" />
-                    {poll.timeLeft}
-                  </div>
-                  {user && !poll.hasVoted && (
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleSavePoll(poll.id)}
-                        className="border-orange-500/30 text-orange-300 hover:bg-orange-500/10"
-                      >
-                        <BookmarkPlus size={16} />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleHidePoll(poll.id)}
-                        className="border-red-500/30 text-red-300 hover:bg-red-500/10"
-                      >
-                        <EyeOff size={16} />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-3 mb-4">
-                {poll.options.map((option, index) => {
-                  const isVoting = votingOption?.pollId === poll.id && votingOption?.optionIndex === index;
-                  const isUserVote = poll.hasVoted && poll.userVote === option.id;
-                  return (
-                    <div
-                      key={option.id}
-                      className={`bg-black/20 rounded-lg p-3 cursor-pointer hover:bg-black/40 transition-colors relative overflow-hidden ${
-                        poll.hasVoted ? 'cursor-default' : ''
-                      } ${isUserVote ? 'ring-2 ring-orange-400' : ''}`}
-                      onMouseDown={() => !poll.hasVoted && user && handleVoteStart(poll.id, index)}
-                      onMouseUp={handleVoteEnd}
-                      onMouseLeave={handleVoteEnd}
-                      onTouchStart={() => !poll.hasVoted && user && handleVoteStart(poll.id, index)}
-                      onTouchEnd={handleVoteEnd}
-                    >
-                      {isVoting && (
-                        <>
-                          <div 
-                            className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-yellow-500/20 transition-all duration-100"
-                            style={{ width: `${votingProgress}%` }}
-                          />
-                          {countdownSeconds > 0 && (
-                            <div className="absolute inset-0 flex items-center justify-center z-20">
-                              <div className="bg-orange-500 text-white rounded-full w-16 h-16 flex items-center justify-center text-2xl font-bold animate-pulse">
-                                {countdownSeconds}
-                              </div>
-                            </div>
-                          )}
-                        </>
-                      )}
-                      
-                      <div className="relative z-10">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-orange-200">{option.option_text}</span>
-                          <span className="text-orange-300/80 text-sm">{option.percentage}%</span>
-                        </div>
-                        <div className="bg-black/40 rounded-full h-2">
-                          <div
-                            className="bg-gradient-to-r from-orange-400 to-yellow-500 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${option.percentage}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="flex items-center justify-between text-orange-300/70 text-sm">
-                <div className="flex items-center">
-                  <Users size={16} className="mr-1" />
-                  {poll.total_votes} votes
-                </div>
-                <div className="flex items-center">
-                  <TrendingUp size={16} className="mr-1" />
-                  {poll.hasVoted ? 'Voted' : 'Active'}
-                </div>
-              </div>
-            </div>
+            <PollCard
+              key={poll.id}
+              poll={poll}
+              onVote={handleVoteStart}
+              onSave={user && !poll.hasVoted ? handleSavePoll : undefined}
+              onHide={user && !poll.hasVoted ? handleHidePoll : undefined}
+              votingState={votingState}
+              onVoteEnd={handleVoteEnd}
+              showActions={!!user}
+              alwaysExpanded={true}
+              canVote={!!user}
+            />
           ))}
         </div>
 
