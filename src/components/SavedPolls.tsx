@@ -40,8 +40,8 @@ const SavedPolls = () => {
           votingState={votingState}
           onVoteEnd={handleVoteEnd}
           showActions={true}
-          expandable={true}
-          alwaysExpanded={false}
+          expandable={false}
+          alwaysExpanded={true}
           canVote={true}
         />
       ))}

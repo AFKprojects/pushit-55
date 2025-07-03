@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
@@ -63,6 +62,7 @@ const Statistics = () => {
         schema: 'public',
         table: 'profiles'
       }, () => {
+        console.log('Profiles changed, refreshing statistics');
         fetchStatistics();
       })
       .on('postgres_changes', {
@@ -70,6 +70,7 @@ const Statistics = () => {
         schema: 'public',
         table: 'polls'
       }, () => {
+        console.log('Polls changed, refreshing statistics');
         fetchStatistics();
       })
       .on('postgres_changes', {
@@ -77,6 +78,7 @@ const Statistics = () => {
         schema: 'public',
         table: 'user_votes'
       }, () => {
+        console.log('Votes changed, refreshing statistics');
         fetchStatistics();
       })
       .subscribe();
@@ -89,11 +91,18 @@ const Statistics = () => {
   const fetchStatistics = async () => {
     try {
       setLoading(true);
+      console.log('Fetching statistics...');
 
       // Get country statistics from profiles table
-      const { data: profiles } = await supabase
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('country');
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+      }
+
+      console.log('Profiles data:', profiles);
 
       if (profiles) {
         const countryCounts = profiles.reduce((acc: { [key: string]: number }, profile) => {
@@ -101,6 +110,8 @@ const Statistics = () => {
           acc[country] = (acc[country] || 0) + 1;
           return acc;
         }, {});
+
+        console.log('Country counts:', countryCounts);
 
         const countryStatsData = Object.entries(countryCounts)
           .map(([country, users]) => ({
@@ -111,6 +122,7 @@ const Statistics = () => {
           .sort((a, b) => b.users - a.users)
           .slice(0, 10);
 
+        console.log('Country stats data:', countryStatsData);
         setCountryStats(countryStatsData);
       }
 
