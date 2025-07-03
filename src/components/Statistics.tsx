@@ -64,7 +64,7 @@ const Statistics = () => {
           .select('*', { count: 'exact', head: true });
 
         // Get button presses in last 24h
-        const { count: buttonPresses } = await supabase
+        const { count: buttonPressesCount } = await supabase
           .from('button_holds')
           .select('*', { count: 'exact', head: true })
           .gte('started_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
@@ -117,22 +117,23 @@ const Statistics = () => {
           });
         }
 
-        // Get real country statistics from profiles table  
+        // Get real country statistics from button presses in last 24h
         const realCountryStats: CountryStats[] = [];
         
-        const { data: countryData, error: countryError } = await supabase
-          .from('profiles')
+        const { data: buttonPresses, error: buttonError } = await supabase
+          .from('button_holds')
           .select('country')
+          .gte('started_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
           .not('country', 'is', null);
 
-        console.log('Country data fetch result:', { countryData, countryError });
+        console.log('Button presses country data:', { buttonPresses, buttonError });
 
-        if (countryData && countryData.length > 0) {
-          // Count users by country
+        if (buttonPresses && buttonPresses.length > 0) {
+          // Count button presses by country
           const countryCounts: { [key: string]: number } = {};
           
-          countryData.forEach(profile => {
-            const country = profile.country || 'Unknown';
+          buttonPresses.forEach(press => {
+            const country = press.country || 'Unknown';
             countryCounts[country] = (countryCounts[country] || 0) + 1;
           });
 
@@ -150,7 +151,7 @@ const Statistics = () => {
 
         setStats({
           totalUsers: usersCount || 0,
-          buttonPresses24h: buttonPresses || 0,
+          buttonPresses24h: buttonPressesCount || 0,
           maxSimultaneous24h: activeHolds || 0,
           allTimeRecord: maxSimultaneous,
           totalPolls: pollsCount || 0,

@@ -11,6 +11,7 @@ export type Database = {
     Tables: {
       button_holds: {
         Row: {
+          country: string | null
           duration_seconds: number | null
           ended_at: string | null
           id: string
@@ -19,6 +20,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          country?: string | null
           duration_seconds?: number | null
           ended_at?: string | null
           id?: string
@@ -27,6 +29,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          country?: string | null
           duration_seconds?: number | null
           ended_at?: string | null
           id?: string

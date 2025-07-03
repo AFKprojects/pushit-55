@@ -2,11 +2,13 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useGeolocation } from './useGeolocation';
 
 export const useButtonHolds = () => {
   const [activeHolders, setActiveHolders] = useState(0);
   const [currentHoldId, setCurrentHoldId] = useState<string | null>(null);
   const { user } = useAuth();
+  const { country } = useGeolocation();
 
   useEffect(() => {
     if (!user) {
@@ -56,7 +58,8 @@ export const useButtonHolds = () => {
         .from('button_holds')
         .insert({
           user_id: user.id,
-          is_active: true
+          is_active: true,
+          country: country || 'Unknown'
         })
         .select()
         .single();
