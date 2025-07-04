@@ -12,13 +12,11 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders }: HoldButtonProps) 
   const [isPressed, setIsPressed] = useState(false);
   const [holdProgress, setHoldProgress] = useState(0);
   const [isActivated, setIsActivated] = useState(false);
-  const [animationKey, setAnimationKey] = useState(0);
   const holdTimeoutRef = useRef<NodeJS.Timeout>();
   const progressIntervalRef = useRef<NodeJS.Timeout>();
   const startTimeRef = useRef<number>();
 
   const startHold = () => {
-    setAnimationKey(prev => prev + 1); // Force re-animation
     setIsPressed(true);
     setHoldProgress(0);
     startTimeRef.current = Date.now();
@@ -59,9 +57,9 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders }: HoldButtonProps) 
   }, []);
 
   const getButtonScale = () => {
-    if (isActivated) return 'scale-110';
-    if (isPressed) return 'scale-105';
-    return 'scale-100 hover:scale-105';
+    if (isActivated) return 'scale-110 transition-transform duration-200';
+    if (isPressed) return 'scale-105 transition-transform duration-200';
+    return 'scale-100 hover:scale-105 transition-transform duration-200';
   };
 
   return (
@@ -117,7 +115,6 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders }: HoldButtonProps) 
 
       {/* Main button */}
       <button
-        key={animationKey}
         className={cn(
           "relative w-48 h-48 rounded-full transition-all duration-200 ease-out",
           "shadow-2xl active:shadow-lg select-none touch-none",
