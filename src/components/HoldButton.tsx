@@ -12,11 +12,13 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders }: HoldButtonProps) 
   const [isPressed, setIsPressed] = useState(false);
   const [holdProgress, setHoldProgress] = useState(0);
   const [isActivated, setIsActivated] = useState(false);
+  const [animationKey, setAnimationKey] = useState(0);
   const holdTimeoutRef = useRef<NodeJS.Timeout>();
   const progressIntervalRef = useRef<NodeJS.Timeout>();
   const startTimeRef = useRef<number>();
 
   const startHold = () => {
+    setAnimationKey(prev => prev + 1); // Force re-animation
     setIsPressed(true);
     setHoldProgress(0);
     startTimeRef.current = Date.now();
@@ -57,9 +59,9 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders }: HoldButtonProps) 
   }, []);
 
   const getButtonScale = () => {
-    if (isActivated) return 'scale-110 transition-transform duration-200';
-    if (isPressed) return 'scale-105 transition-transform duration-200';
-    return 'scale-100 hover:scale-105 transition-transform duration-200';
+    if (isActivated) return 'scale-110';
+    if (isPressed) return 'scale-105';
+    return 'scale-100 hover:scale-105';
   };
 
   return (
@@ -67,7 +69,7 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders }: HoldButtonProps) 
       {/* Countdown timer above button */}
       {isPressed && !isActivated && (
         <div className="absolute -top-20 left-1/2 transform -translate-x-1/2">
-          <div className="bg-gradient-to-r from-orange-500 to-blue-600 rounded-2xl px-6 py-3 border border-orange-400/30 shadow-xl animate-fade-in">
+          <div className="bg-black/60 backdrop-blur-sm rounded-2xl px-6 py-3 border border-white/20 shadow-xl animate-fade-in">
             <div className="text-2xl font-bold text-white text-center">
               {Math.ceil(3 - (holdProgress * 3))}
             </div>
@@ -115,8 +117,9 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders }: HoldButtonProps) 
 
       {/* Main button */}
       <button
+        key={animationKey}
         className={cn(
-          "relative w-48 h-48 rounded-full",
+          "relative w-48 h-48 rounded-full transition-all duration-200 ease-out",
           "shadow-2xl active:shadow-lg select-none touch-none",
           "flex items-center justify-center overflow-hidden",
           getButtonScale()
@@ -135,7 +138,7 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders }: HoldButtonProps) 
         ></div>
 
         <div className="relative z-10 text-white text-center font-bold">
-          {isActivated && (
+          {isActivated && !isPressed && (
             <div className="animate-fade-in">
               <div className="text-xs opacity-80">LIVE</div>
             </div>
