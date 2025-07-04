@@ -56,25 +56,20 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders }: HoldButtonProps) 
     };
   }, []);
 
+  const getButtonColor = () => {
+    if (isActivated) return 'from-orange-400 to-yellow-500';
+    if (isPressed) return 'from-orange-500 to-red-600';
+    return 'from-orange-500 to-yellow-600';
+  };
+
   const getButtonScale = () => {
-    if (isActivated) return 'scale-110 transition-transform duration-200';
-    if (isPressed) return 'scale-105 transition-transform duration-200';
-    return 'scale-100 hover:scale-105 transition-transform duration-200';
+    if (isActivated) return 'scale-110';
+    if (isPressed) return 'scale-105';
+    return 'scale-100 hover:scale-105';
   };
 
   return (
     <div className="relative">
-      {/* Countdown timer above button */}
-      {isPressed && !isActivated && (
-        <div className="absolute -top-20 left-1/2 transform -translate-x-1/2">
-          <div className="bg-black/60 backdrop-blur-sm rounded-2xl px-6 py-3 border border-white/20 shadow-xl animate-fade-in">
-            <div className="text-2xl font-bold text-white text-center">
-              {Math.ceil(3 - (holdProgress * 3))}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Outer glow effect with heartbeat animation */}
       {isActivated && (
         <div className="absolute inset-0 rounded-full bg-orange-400/30 animate-pulse scale-150" 
@@ -118,7 +113,7 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders }: HoldButtonProps) 
         className={cn(
           "relative w-48 h-48 rounded-full transition-all duration-200 ease-out",
           "shadow-2xl active:shadow-lg select-none touch-none",
-          "flex items-center justify-center overflow-hidden",
+          "flex items-center justify-center",
           getButtonScale()
         )}
         onMouseDown={startHold}
@@ -128,16 +123,34 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders }: HoldButtonProps) 
         onTouchEnd={endHold}
         style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
       >
-        {/* Background image */}
-        <div 
-          className="absolute inset-0 w-full h-full bg-cover bg-center"
-          style={{ backgroundImage: 'url(/lovable-uploads/81adbfc0-1db2-4230-83fa-d910ce5070f9.png)' }}
-        ></div>
+        {/* Blue outer ring */}
+        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 shadow-2xl"></div>
+        
+        {/* Orange inner circle */}
+        <div className="absolute inset-3 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 shadow-lg"></div>
+        
+        {/* Inner shadow for depth */}
+        <div className="absolute inset-6 rounded-full bg-gradient-to-br from-orange-300 to-orange-500 shadow-inner"></div>
 
-        <div className="relative z-10 text-white text-center font-bold">
-          {isActivated && !isPressed && (
+        <div className="relative z-10 text-blue-900 text-center font-bold">
+          {isActivated ? (
             <div className="animate-fade-in">
-              <div className="text-xs opacity-80">LIVE</div>
+              <div className="text-lg leading-tight">PUSH</div>
+              <div className="text-lg leading-tight">IT!</div>
+              <div className="text-xs mt-1 opacity-80">LIVE</div>
+            </div>
+          ) : isPressed ? (
+            <div className="animate-scale-in">
+              <div className="text-lg leading-tight">PUSH</div>
+              <div className="text-lg leading-tight">IT!</div>
+              <div className="text-sm mt-1">
+                {Math.ceil(3 - (holdProgress * 3))}
+              </div>
+            </div>
+          ) : (
+            <div>
+              <div className="text-lg leading-tight">PUSH</div>
+              <div className="text-lg leading-tight">IT!</div>
             </div>
           )}
         </div>
