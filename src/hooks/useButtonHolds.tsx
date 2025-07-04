@@ -54,6 +54,17 @@ export const useButtonHolds = () => {
 
     try {
       console.log('Starting hold for user:', user.id);
+      
+      // First, cleanup any existing active holds for this user
+      await supabase
+        .from('button_holds')
+        .update({
+          ended_at: new Date().toISOString(),
+          is_active: false
+        })
+        .eq('user_id', user.id)
+        .eq('is_active', true);
+
       const { data, error } = await supabase
         .from('button_holds')
         .insert({
