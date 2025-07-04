@@ -6,9 +6,10 @@ interface HoldButtonProps {
   onHoldStart: () => void;
   onHoldEnd: () => void;
   globalHolders: number;
+  onActivationChange: (isActivated: boolean) => void;
 }
 
-const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders }: HoldButtonProps) => {
+const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders, onActivationChange }: HoldButtonProps) => {
   const [isPressed, setIsPressed] = useState(false);
   const [holdProgress, setHoldProgress] = useState(0);
   const [isActivated, setIsActivated] = useState(false);
@@ -48,6 +49,10 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders }: HoldButtonProps) 
       clearInterval(progressIntervalRef.current);
     }
   };
+
+  useEffect(() => {
+    onActivationChange(isActivated);
+  }, [isActivated, onActivationChange]);
 
   useEffect(() => {
     return () => {

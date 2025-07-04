@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('main');
+  const [isButtonActivated, setIsButtonActivated] = useState(false);
   const { user } = useAuth();
   const { activeHolders, startHold, endHold } = useButtonHolds();
   const navigate = useNavigate();
@@ -83,10 +84,11 @@ const Index = () => {
                 onHoldStart={handleHoldStart}
                 onHoldEnd={handleHoldEnd}
                 globalHolders={activeHolders}
+                onActivationChange={setIsButtonActivated}
               />
 
               {/* Absolute positioned counter overlay */}
-              {user && activeHolders > 0 && (
+              {user && isButtonActivated && activeHolders > 0 && (
                 <div className="absolute -top-24 left-1/2 transform -translate-x-1/2">
                   <div className="bg-black/40 backdrop-blur-sm rounded-2xl px-8 py-6 border border-orange-500/30 whitespace-nowrap">
                     <div className="text-3xl font-bold text-orange-400 mb-2 animate-pulse text-center">
