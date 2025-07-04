@@ -112,10 +112,8 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders }: HoldButtonProps) 
       <button
         className={cn(
           "relative w-48 h-48 rounded-full transition-all duration-200 ease-out",
-          "bg-gradient-to-br shadow-2xl",
-          "active:shadow-lg select-none touch-none",
+          "shadow-2xl active:shadow-lg select-none touch-none",
           "flex items-center justify-center",
-          getButtonColor(),
           getButtonScale()
         )}
         onMouseDown={startHold}
@@ -125,29 +123,37 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders }: HoldButtonProps) 
         onTouchEnd={endHold}
         style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
       >
-        <div className="text-black text-center">
+        {/* Blue outer ring */}
+        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 shadow-2xl"></div>
+        
+        {/* Orange inner circle */}
+        <div className="absolute inset-3 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 shadow-lg"></div>
+        
+        {/* Inner shadow for depth */}
+        <div className="absolute inset-6 rounded-full bg-gradient-to-br from-orange-300 to-orange-500 shadow-inner"></div>
+
+        <div className="relative z-10 text-blue-900 text-center font-bold">
           {isActivated ? (
             <div className="animate-fade-in">
-              <div className="text-2xl font-bold mb-1">LIVE</div>
-              <div className="text-sm opacity-80">Hold to connect</div>
+              <div className="text-lg leading-tight">PUSH</div>
+              <div className="text-lg leading-tight">IT!</div>
+              <div className="text-xs mt-1 opacity-80">LIVE</div>
             </div>
           ) : isPressed ? (
             <div className="animate-scale-in">
-              <div className="text-xl font-bold mb-1">
+              <div className="text-lg leading-tight">PUSH</div>
+              <div className="text-lg leading-tight">IT!</div>
+              <div className="text-sm mt-1">
                 {Math.ceil(3 - (holdProgress * 3))}
               </div>
-              <div className="text-sm opacity-80">Keep holding...</div>
             </div>
           ) : (
             <div>
-              <div className="text-xl font-bold">HOLD</div>
-              <div className="text-sm opacity-80 mt-1">Press & hold for 3s</div>
+              <div className="text-lg leading-tight">PUSH</div>
+              <div className="text-lg leading-tight">IT!</div>
             </div>
           )}
         </div>
-
-        {/* Inner highlight */}
-        <div className="absolute inset-2 rounded-full bg-white/10" />
       </button>
     </div>
   );
