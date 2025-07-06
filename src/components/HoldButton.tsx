@@ -18,29 +18,31 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders, onActivationChange 
   const startTimeRef = useRef<number>();
 
   const startHold = () => {
-    // Ensure clean state before starting
+    // Force reset all states
     setIsPressed(false);
     setHoldProgress(0);
     setIsActivated(false);
     
-    // Small delay to ensure CSS transitions work properly
-    setTimeout(() => {
-      setIsPressed(true);
-      startTimeRef.current = Date.now();
-    }, 10);
-
-    // Progress animation
-    progressIntervalRef.current = setInterval(() => {
-      const elapsed = Date.now() - startTimeRef.current!;
-      const progress = Math.min(elapsed / 3000, 1);
-      setHoldProgress(progress);
-    }, 16);
-
-    // Activation after 3 seconds
-    holdTimeoutRef.current = setTimeout(() => {
-      setIsActivated(true);
-      onHoldStart();
-    }, 3000);
+    // Force browser reflow by using requestAnimationFrame twice
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setIsPressed(true);
+        startTimeRef.current = Date.now();
+        
+        // Progress animation - start after setting the time
+        progressIntervalRef.current = setInterval(() => {
+          const elapsed = Date.now() - startTimeRef.current!;
+          const progress = Math.min(elapsed / 3000, 1);
+          setHoldProgress(progress);
+        }, 16);
+        
+        // Activation after 3 seconds
+        holdTimeoutRef.current = setTimeout(() => {
+          setIsActivated(true);
+          onHoldStart();
+        }, 3000);
+      });
+    });
   };
 
   const endHold = () => {
