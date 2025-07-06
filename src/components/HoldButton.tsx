@@ -13,6 +13,7 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders, onActivationChange 
   const [isPressed, setIsPressed] = useState(false);
   const [holdProgress, setHoldProgress] = useState(0);
   const [isActivated, setIsActivated] = useState(false);
+  const [forceReset, setForceReset] = useState(0);
   const holdTimeoutRef = useRef<NodeJS.Timeout>();
   const progressIntervalRef = useRef<NodeJS.Timeout>();
   const startTimeRef = useRef<number>();
@@ -54,13 +55,12 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders, onActivationChange 
       clearInterval(progressIntervalRef.current);
     }
     
-    // Force state reset with animation frame to ensure smooth transition
-    requestAnimationFrame(() => {
-      setIsPressed(false);
-      setHoldProgress(0);
-      setIsActivated(false);
-      onHoldEnd();
-    });
+    // Force complete reset by incrementing forceReset
+    setForceReset(prev => prev + 1);
+    setIsPressed(false);
+    setHoldProgress(0);
+    setIsActivated(false);
+    onHoldEnd();
   };
 
   useEffect(() => {
@@ -128,6 +128,7 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders, onActivationChange 
 
       {/* Main button */}
       <button
+        key={forceReset}
         className={cn(
           "relative w-48 h-48 rounded-full transition-all duration-200 ease-out",
           "shadow-2xl active:shadow-lg select-none touch-none",
