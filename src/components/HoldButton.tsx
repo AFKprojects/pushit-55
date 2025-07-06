@@ -18,9 +18,16 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders, onActivationChange 
   const startTimeRef = useRef<number>();
 
   const startHold = () => {
-    setIsPressed(true);
+    // Ensure clean state before starting
+    setIsPressed(false);
     setHoldProgress(0);
-    startTimeRef.current = Date.now();
+    setIsActivated(false);
+    
+    // Small delay to ensure CSS transitions work properly
+    setTimeout(() => {
+      setIsPressed(true);
+      startTimeRef.current = Date.now();
+    }, 10);
 
     // Progress animation
     progressIntervalRef.current = setInterval(() => {
