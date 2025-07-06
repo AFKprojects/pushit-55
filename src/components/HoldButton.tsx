@@ -46,17 +46,21 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders, onActivationChange 
   };
 
   const endHold = () => {
-    setIsPressed(false);
-    setHoldProgress(0);
-    setIsActivated(false);
-    onHoldEnd();
-
+    // Clear all timers first
     if (holdTimeoutRef.current) {
       clearTimeout(holdTimeoutRef.current);
     }
     if (progressIntervalRef.current) {
       clearInterval(progressIntervalRef.current);
     }
+    
+    // Force state reset with animation frame to ensure smooth transition
+    requestAnimationFrame(() => {
+      setIsPressed(false);
+      setHoldProgress(0);
+      setIsActivated(false);
+      onHoldEnd();
+    });
   };
 
   useEffect(() => {
