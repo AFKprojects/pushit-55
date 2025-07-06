@@ -55,11 +55,16 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders, onActivationChange 
       clearInterval(progressIntervalRef.current);
     }
     
-    // Force complete reset by incrementing forceReset
-    setForceReset(prev => prev + 1);
+    // Immediate state reset
     setIsPressed(false);
     setHoldProgress(0);
     setIsActivated(false);
+    
+    // Force re-render after state reset
+    setTimeout(() => {
+      setForceReset(prev => prev + 1);
+    }, 0);
+    
     onHoldEnd();
   };
 
