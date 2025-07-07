@@ -98,6 +98,17 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders, onActivationChange 
 
   return (
     <div className="relative">
+      {/* Timer overlay above button */}
+      {isPressed && !isActivated && (
+        <div className="absolute -top-16 left-1/2 transform -translate-x-1/2 z-20">
+          <div className="bg-black/40 backdrop-blur-sm rounded-2xl px-6 py-3 border border-orange-500/30">
+            <div className="text-2xl font-bold text-orange-400 animate-scale-in text-center">
+              {Math.ceil(3 - (holdProgress * 3))}
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Outer glow effect with heartbeat animation */}
       {isActivated && (
         <div className="absolute inset-0 rounded-full bg-orange-400/30 animate-pulse scale-150" 
@@ -162,12 +173,6 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders, onActivationChange 
           {isActivated ? (
             <div className="animate-fade-in">
               <div className="text-xs mt-1 opacity-80">LIVE</div>
-            </div>
-          ) : isPressed ? (
-            <div className="animate-scale-in">
-              <div className="text-sm mt-1">
-                {Math.ceil(3 - (holdProgress * 3))}
-              </div>
             </div>
           ) : (
             <div className="opacity-0">
