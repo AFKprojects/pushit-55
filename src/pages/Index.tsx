@@ -88,15 +88,25 @@ const Index = () => {
               />
 
               {/* Absolute positioned counter overlay */}
-              {user && isButtonActivated && activeHolders > 0 && (
+              {isButtonActivated && (
                 <div className="absolute -top-24 left-1/2 transform -translate-x-1/2">
                   <div className="bg-black/40 backdrop-blur-sm rounded-2xl px-8 py-6 border border-orange-500/30 whitespace-nowrap">
-                    <div className="text-3xl font-bold text-orange-400 mb-2 animate-pulse text-center">
-                      {activeHolders}
-                    </div>
-                    <div className="text-orange-200 text-sm text-center">
-                      {activeHolders === 1 ? 'person is holding' : 'people are holding'} together with you
-                    </div>
+                    {user ? (
+                      // Logged in user - show count
+                      <>
+                        <div className="text-3xl font-bold text-orange-400 mb-2 animate-pulse text-center">
+                          {activeHolders}
+                        </div>
+                        <div className="text-orange-200 text-sm text-center">
+                          {activeHolders === 1 ? 'person is holding' : 'people are holding'} together with you
+                        </div>
+                      </>
+                    ) : (
+                      // Not logged in - show login message
+                      <div className="text-orange-200 text-sm text-center">
+                        Log in to see how many people are holding the button with you
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

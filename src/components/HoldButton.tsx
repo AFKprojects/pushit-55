@@ -170,15 +170,9 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders, onActivationChange 
         ></div>
 
         <div className="relative z-10 text-blue-900 text-center font-bold">
-          {isActivated ? (
-            <div className="animate-fade-in">
-              <div className="text-xs mt-1 opacity-80">LIVE</div>
-            </div>
-          ) : (
-            <div className="opacity-0">
-              {/* Hidden text to maintain button structure */}
-            </div>
-          )}
+          <div className="opacity-0">
+            {/* Hidden text to maintain button structure */}
+          </div>
         </div>
       </button>
     </div>
