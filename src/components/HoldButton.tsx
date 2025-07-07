@@ -18,32 +18,37 @@ const HoldButton = ({ onHoldStart, onHoldEnd, globalHolders, onActivationChange 
   const progressIntervalRef = useRef<NodeJS.Timeout>();
   const startTimeRef = useRef<number>();
 
-  const startHold = () => {
-    // Force reset all states
-    setIsPressed(false);
+  const startHold = (e: any) => {
+    // Prevent default touch behavior
+    e.preventDefault();
+    
+    // Clear any existing timers first
+    if (holdTimeoutRef.current) {
+      clearTimeout(holdTimeoutRef.current);
+    }
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+    }
+    
+    // Reset states
+    setIsPressed(true);
     setHoldProgress(0);
     setIsActivated(false);
     
-    // Force browser reflow by using requestAnimationFrame twice
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        setIsPressed(true);
-        startTimeRef.current = Date.now();
-        
-        // Progress animation - start after setting the time
-        progressIntervalRef.current = setInterval(() => {
-          const elapsed = Date.now() - startTimeRef.current!;
-          const progress = Math.min(elapsed / 3000, 1);
-          setHoldProgress(progress);
-        }, 16);
-        
-        // Activation after 3 seconds
-        holdTimeoutRef.current = setTimeout(() => {
-          setIsActivated(true);
-          onHoldStart();
-        }, 3000);
-      });
-    });
+    startTimeRef.current = Date.now();
+    
+    // Progress animation
+    progressIntervalRef.current = setInterval(() => {
+      const elapsed = Date.now() - startTimeRef.current!;
+      const progress = Math.min(elapsed / 3000, 1);
+      setHoldProgress(progress);
+    }, 16);
+    
+    // Activation only after 3 seconds
+    holdTimeoutRef.current = setTimeout(() => {
+      setIsActivated(true);
+      onHoldStart();
+    }, 3000);
   };
 
   const endHold = () => {
