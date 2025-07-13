@@ -25,6 +25,7 @@ interface Poll {
 
 export const usePolls = () => {
   const [polls, setPolls] = useState<Poll[]>([]);
+  const [archivedPolls, setArchivedPolls] = useState<Poll[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -50,7 +51,7 @@ export const usePolls = () => {
     try {
       setLoading(true);
       
-      // Fetch polls with options
+      // Fetch active polls with options
       const { data: pollsData, error: pollsError } = await supabase
         .from('polls')
         .select(`
@@ -70,7 +71,28 @@ export const usePolls = () => {
         .eq('status', 'active')
         .order('created_at', { ascending: false });
 
+      // Fetch archived polls with options
+      const { data: archivedData, error: archivedError } = await supabase
+        .from('polls')
+        .select(`
+          id,
+          question,
+          creator_username,
+          status,
+          total_votes,
+          expires_at,
+          created_at,
+          poll_options (
+            id,
+            option_text,
+            votes
+          )
+        `)
+        .eq('status', 'archived')
+        .order('created_at', { ascending: false });
+
       if (pollsError) throw pollsError;
+      if (archivedError) throw archivedError;
 
       let userVotes = [];
       let hiddenPolls = [];
@@ -95,34 +117,41 @@ export const usePolls = () => {
         hiddenPolls = hiddenData?.map(h => h.poll_id) || [];
       }
 
-      // Filter out hidden polls and process remaining polls
-      const processedPolls = pollsData
-        ?.filter(poll => !hiddenPolls.includes(poll.id))
-        ?.map((poll) => {
-          const userVote = userVotes.find(v => v.poll_id === poll.id);
-          const options = poll.poll_options.map(opt => ({
-            id: opt.id,
-            option_text: opt.option_text,
-            votes: opt.votes,
-            percentage: poll.total_votes > 0 ? Math.round((opt.votes / poll.total_votes) * 100) : 0
-          }));
+      // Process polls function
+      const processPolls = (pollData: any[]) => {
+        return pollData
+          ?.filter(poll => !hiddenPolls.includes(poll.id))
+          ?.map((poll) => {
+            const userVote = userVotes.find(v => v.poll_id === poll.id);
+            const options = poll.poll_options.map(opt => ({
+              id: opt.id,
+              option_text: opt.option_text,
+              votes: opt.votes,
+              percentage: poll.total_votes > 0 ? Math.round((opt.votes / poll.total_votes) * 100) : 0
+            }));
 
-          return {
-            id: poll.id,
-            question: poll.question,
-            creator_username: poll.creator_username,
-            status: poll.status,
-            total_votes: poll.total_votes,
-            expires_at: poll.expires_at,
-            created_at: poll.created_at,
-            options,
-            timeLeft: calculateTimeLeft(poll.expires_at),
-            hasVoted: !!userVote,
-            userVote: userVote?.option_id
-          };
-        }) || [];
+            return {
+              id: poll.id,
+              question: poll.question,
+              creator_username: poll.creator_username,
+              status: poll.status,
+              total_votes: poll.total_votes,
+              expires_at: poll.expires_at,
+              created_at: poll.created_at,
+              options,
+              timeLeft: calculateTimeLeft(poll.expires_at),
+              hasVoted: !!userVote,
+              userVote: userVote?.option_id
+            };
+          }) || [];
+      };
+
+      // Filter out hidden polls and process remaining polls
+      const processedPolls = processPolls(pollsData || []);
+      const processedArchivedPolls = processPolls(archivedData || []);
 
       setPolls(processedPolls);
+      setArchivedPolls(processedArchivedPolls);
     } catch (error) {
       console.error('Error fetching polls:', error);
       toast({
@@ -265,6 +294,7 @@ export const usePolls = () => {
 
   return {
     polls,
+    archivedPolls,
     loading,
     voteOnPoll,
     savePoll,
