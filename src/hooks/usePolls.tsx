@@ -51,6 +51,15 @@ export const usePolls = () => {
     try {
       setLoading(true);
       
+      // First, run cleanup to archive expired polls and delete old ones
+      try {
+        await supabase.functions.invoke('manage-polls', {
+          method: 'POST'
+        });
+      } catch (cleanupError) {
+        console.warn('Cleanup function failed, continuing with fetch:', cleanupError);
+      }
+      
       // Fetch active polls with options
       const { data: pollsData, error: pollsError } = await supabase
         .from('polls')

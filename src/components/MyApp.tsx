@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Users, BarChart3, Clock, Vote, Archive, BookmarkPlus, Eye, TrendingUp, User, Settings, ChevronDown, ChevronRight, LogIn, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
+import { usePollManagement } from '@/hooks/usePollManagement';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -43,6 +44,7 @@ const MyApp = () => {
   const [loading, setLoading] = useState(true);
   
   const { user, signOut } = useAuth();
+  const { managePollsCleanup, isManaging } = usePollManagement();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -176,6 +178,15 @@ const MyApp = () => {
       }
     } catch (error) {
       console.error('Error changing vote:', error);
+    }
+  };
+
+  const handlePollCleanup = async () => {
+    try {
+      await managePollsCleanup();
+      fetchUserData(); // Refresh data after cleanup
+    } catch (error) {
+      console.error('Cleanup failed:', error);
     }
   };
 
@@ -547,6 +558,24 @@ const MyApp = () => {
                   </button>
                 </div>
               </div>
+            </div>
+
+            <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-4 border border-blue-500/20">
+              <div className="flex items-center gap-3 mb-4">
+                <Archive size={20} className="text-blue-400" />
+                <span className="text-blue-200 font-medium">Poll Management</span>
+              </div>
+              <p className="text-blue-300/70 text-sm mb-4">
+                Clean up expired polls and remove old data automatically
+              </p>
+              <Button
+                onClick={handlePollCleanup}
+                disabled={isManaging}
+                variant="outline"
+                className="w-full border-blue-500/30 text-blue-400 hover:bg-blue-500/10"
+              >
+                {isManaging ? 'Cleaning...' : 'Run Cleanup'}
+              </Button>
             </div>
           </div>
         )}
