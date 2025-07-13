@@ -35,8 +35,45 @@ export const usePollManagement = () => {
     }
   };
 
+  const deleteAllPolls = async () => {
+    setIsManaging(true);
+    
+    try {
+      // Delete all user votes
+      await supabase.from('user_votes').delete().neq('id', '0');
+      
+      // Delete all saved polls
+      await supabase.from('saved_polls').delete().neq('id', '0');
+      
+      // Delete all hidden polls
+      await supabase.from('hidden_polls').delete().neq('id', '0');
+      
+      // Delete all poll options
+      await supabase.from('poll_options').delete().neq('id', '0');
+      
+      // Delete all polls
+      await supabase.from('polls').delete().neq('id', '0');
+
+      toast({
+        title: "Success",
+        description: "All polls deleted successfully",
+      });
+    } catch (error: any) {
+      console.error('Error deleting all polls:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete polls",
+        variant: "destructive",
+      });
+      throw error;
+    } finally {
+      setIsManaging(false);
+    }
+  };
+
   return {
     managePollsCleanup,
+    deleteAllPolls,
     isManaging
   };
 };

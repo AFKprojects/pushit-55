@@ -44,7 +44,7 @@ const MyApp = () => {
   const [loading, setLoading] = useState(true);
   
   const { user, signOut } = useAuth();
-  const { managePollsCleanup, isManaging } = usePollManagement();
+  const { managePollsCleanup, deleteAllPolls, isManaging } = usePollManagement();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -568,14 +568,31 @@ const MyApp = () => {
               <p className="text-blue-300/70 text-sm mb-4">
                 Clean up expired polls and remove old data automatically
               </p>
-              <Button
-                onClick={handlePollCleanup}
-                disabled={isManaging}
-                variant="outline"
-                className="w-full border-blue-500/30 text-blue-400 hover:bg-blue-500/10"
-              >
-                {isManaging ? 'Cleaning...' : 'Run Cleanup'}
-              </Button>
+              <div className="space-y-2">
+                <Button
+                  onClick={handlePollCleanup}
+                  disabled={isManaging}
+                  variant="outline"
+                  className="w-full border-blue-500/30 text-blue-400 hover:bg-blue-500/10"
+                >
+                  {isManaging ? 'Cleaning...' : 'Run Cleanup'}
+                </Button>
+                <Button
+                  onClick={async () => {
+                    try {
+                      await deleteAllPolls();
+                      fetchUserData();
+                    } catch (error) {
+                      console.error('Delete all failed:', error);
+                    }
+                  }}
+                  disabled={isManaging}
+                  variant="outline"
+                  className="w-full border-red-500/30 text-red-400 hover:bg-red-500/10"
+                >
+                  {isManaging ? 'Deleting...' : 'Delete All Polls'}
+                </Button>
+              </div>
             </div>
           </div>
         )}
