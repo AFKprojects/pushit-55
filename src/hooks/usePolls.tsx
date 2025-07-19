@@ -132,11 +132,15 @@ export const usePolls = () => {
           ?.filter(poll => !hiddenPolls.includes(poll.id))
           ?.map((poll) => {
             const userVote = userVotes.find(v => v.poll_id === poll.id);
+            
+            // Calculate total votes from actual option votes (more reliable)
+            const actualTotalVotes = poll.poll_options.reduce((sum: number, opt: any) => sum + opt.votes, 0);
+            
             const options = poll.poll_options.map(opt => ({
               id: opt.id,
               option_text: opt.option_text,
               votes: opt.votes,
-              percentage: poll.total_votes > 0 ? Math.round((opt.votes / poll.total_votes) * 100) : 0
+              percentage: actualTotalVotes > 0 ? Math.round((opt.votes / actualTotalVotes) * 100) : 0
             }));
 
             return {
@@ -144,7 +148,7 @@ export const usePolls = () => {
               question: poll.question,
               creator_username: poll.creator_username,
               status: poll.status,
-              total_votes: poll.total_votes,
+              total_votes: actualTotalVotes, // Use calculated total instead of stored value
               expires_at: poll.expires_at,
               created_at: poll.created_at,
               options,

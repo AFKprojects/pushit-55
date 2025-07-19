@@ -16,8 +16,17 @@ export const useButtonHolds = () => {
       return;
     }
 
-    // Fetch initial active holds count
+    // Cleanup old inactive holds and fetch current active count
     const fetchActiveHolds = async () => {
+      // First cleanup holds older than 30 seconds that are still marked as active
+      const thirtySecondsAgo = new Date(Date.now() - 30000).toISOString();
+      await supabase
+        .from('button_holds')
+        .update({ is_active: false, ended_at: new Date().toISOString() })
+        .eq('is_active', true)
+        .lt('created_at', thirtySecondsAgo);
+
+      // Then get current active holds count
       const { data, error } = await supabase
         .from('button_holds')
         .select('id')
@@ -44,8 +53,12 @@ export const useButtonHolds = () => {
       })
       .subscribe();
 
+    // Set up periodic cleanup every 10 seconds
+    const cleanupInterval = setInterval(fetchActiveHolds, 10000);
+
     return () => {
       supabase.removeChannel(channel);
+      clearInterval(cleanupInterval);
     };
   }, [user]);
 
