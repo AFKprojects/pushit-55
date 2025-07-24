@@ -99,7 +99,7 @@ export const useButtonHolds = () => {
     // Initial force cleanup and count
     forceCleanupOldSessions().then(() => cleanupInactiveSessions());
 
-    // Set up real-time subscription for changes
+    // Set up real-time subscription for changes - NO NUCLEAR CLEANUP HERE
     const channel = supabase
       .channel('button-holds-changes')
       .on('postgres_changes', {
@@ -107,6 +107,7 @@ export const useButtonHolds = () => {
         schema: 'public',
         table: 'button_holds'
       }, () => {
+        // Just regular cleanup, NO nuclear cleanup during real-time updates
         cleanupInactiveSessions();
       })
       .subscribe();
