@@ -18,7 +18,7 @@ export const useButtonHolds = () => {
     const { data: deleted, error } = await supabase
       .from('button_holds')
       .delete()
-      .lt('started_at', oneMinuteAgo)
+      .lt('last_heartbeat', oneMinuteAgo)
       .select();
 
     if (error) {
@@ -35,7 +35,7 @@ export const useButtonHolds = () => {
     const { data: deleted, error } = await supabase
       .from('button_holds')
       .delete()
-      .lt('started_at', tenSecondsAgo)
+      .lt('last_heartbeat', tenSecondsAgo)
       .select();
 
     if (error) {
@@ -54,13 +54,13 @@ export const useButtonHolds = () => {
     }
   };
 
-  // Send heartbeat to keep session alive (updates started_at as workaround)
+  // Send heartbeat to keep session alive
   const sendHeartbeat = async () => {
     if (!currentHoldId) return;
 
     const { error } = await supabase
       .from('button_holds')
-      .update({ started_at: new Date().toISOString() })
+      .update({ last_heartbeat: new Date().toISOString() })
       .eq('id', currentHoldId);
 
     if (error) {
