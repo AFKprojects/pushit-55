@@ -18,12 +18,12 @@ export const useButtonHolds = () => {
 
     // Cleanup old inactive holds and fetch initial active count
     const fetchActiveHolds = async () => {
-      // Cleanup holds older than 30 seconds
-      const thirtySecondsAgo = new Date(Date.now() - 30000).toISOString();
-      await supabase
+      // Cleanup holds older than 10 seconds (for faster zombie session cleanup)
+      const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
+       await supabase
         .from('button_holds')
         .delete()
-        .lt('created_at', thirtySecondsAgo);
+        .lt('created_at', tenSecondsAgo);
 
       // Get current active holds count
       const { data, error } = await supabase
@@ -59,14 +59,14 @@ export const useButtonHolds = () => {
       })
       .subscribe();
 
-    // Set up periodic cleanup every 5 seconds
+    // Set up periodic cleanup every 3 seconds for faster zombie session cleanup
     const cleanupInterval = setInterval(async () => {
-      const thirtySecondsAgo = new Date(Date.now() - 30000).toISOString();
+      const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
       await supabase
         .from('button_holds')
         .delete()
-        .lt('created_at', thirtySecondsAgo);
-    }, 5000);
+        .lt('created_at', tenSecondsAgo);
+    }, 3000);
 
     return () => {
       supabase.removeChannel(channel);
