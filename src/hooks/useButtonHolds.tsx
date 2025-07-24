@@ -11,14 +11,14 @@ export const useButtonHolds = () => {
   const { user } = useAuth();
   const { country } = useGeolocation();
 
-  // Force cleanup all sessions older than 2 minutes (app startup)
+  // Force cleanup all sessions older than 1 minute (app startup)
   const forceCleanupOldSessions = async () => {
-    const twoMinutesAgo = new Date(Date.now() - 120000).toISOString();
+    const oneMinuteAgo = new Date(Date.now() - 60000).toISOString();
     
     const { data: deleted, error } = await supabase
       .from('button_holds')
       .delete()
-      .lt('started_at', twoMinutesAgo)
+      .lt('last_heartbeat', oneMinuteAgo)
       .select();
 
     if (error) {
@@ -28,14 +28,14 @@ export const useButtonHolds = () => {
     }
   };
 
-  // Regular cleanup - sessions without heartbeat for 30+ seconds (longer timeout to avoid race condition)
+  // Regular cleanup - sessions without heartbeat for 10+ seconds
   const cleanupInactiveSessions = async () => {
-    const thirtySecondsAgo = new Date(Date.now() - 30000).toISOString();
+    const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
     
     const { data: deleted, error } = await supabase
       .from('button_holds')
       .delete()
-      .lt('started_at', thirtySecondsAgo)
+      .lt('last_heartbeat', tenSecondsAgo)
       .select();
 
     if (error) {
@@ -54,13 +54,13 @@ export const useButtonHolds = () => {
     }
   };
 
-  // Send heartbeat to keep session alive (temporary workaround)
+  // Send heartbeat to keep session alive
   const sendHeartbeat = async () => {
     if (!currentHoldId) return;
 
     const { error } = await supabase
       .from('button_holds')
-      .update({ started_at: new Date().toISOString() })
+      .update({ last_heartbeat: new Date().toISOString() } as any)
       .eq('id', currentHoldId);
 
     if (error) {
