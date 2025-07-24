@@ -31,6 +31,14 @@ export const useButtonHolds = () => {
   // Regular cleanup - sessions without heartbeat for 10+ seconds
   const cleanupInactiveSessions = async () => {
     const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
+    console.log('Running cleanup - checking sessions older than:', tenSecondsAgo);
+    
+    // First check what sessions exist
+    const { data: allSessions, error: checkError } = await supabase
+      .from('button_holds')
+      .select('*');
+    
+    console.log('All current sessions:', allSessions);
     
     const { data: deleted, error } = await supabase
       .from('button_holds')
@@ -58,13 +66,17 @@ export const useButtonHolds = () => {
   const sendHeartbeat = async () => {
     if (!currentHoldId) return;
 
-    const { error } = await supabase
+    console.log('Sending heartbeat for session:', currentHoldId);
+    const { error, data } = await supabase
       .from('button_holds')
       .update({ last_heartbeat: new Date().toISOString() } as any)
-      .eq('id', currentHoldId);
+      .eq('id', currentHoldId)
+      .select();
 
     if (error) {
       console.error('Heartbeat error:', error);
+    } else {
+      console.log('Heartbeat sent successfully:', data);
     }
   };
 
