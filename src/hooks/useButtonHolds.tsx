@@ -11,10 +11,11 @@ export const useButtonHolds = () => {
   const { user } = useAuth();
   const { country } = useGeolocation();
 
-  // Cleanup inactive sessions and get fresh count
+  // Aggressive cleanup to handle zombie sessions
   const cleanupInactiveSessions = async () => {
-    const eightSecondsAgo = new Date(Date.now() - 8000).toISOString();
-    console.log('Cleaning up sessions older than:', eightSecondsAgo);
+    // Force cleanup ALL sessions older than 15 seconds (very aggressive)
+    const fifteenSecondsAgo = new Date(Date.now() - 15000).toISOString();
+    console.log('AGGRESSIVE cleanup - removing holds older than:', fifteenSecondsAgo);
     
     // First, let's see what's in the database
     const { data: allSessions, error: selectError } = await supabase
@@ -23,16 +24,17 @@ export const useButtonHolds = () => {
     
     console.log('All sessions before cleanup:', allSessions);
     
+    // Force delete everything older than 15 seconds
     const { data: deletedRecords, error } = await supabase
       .from('button_holds')
       .delete()
-      .lt('started_at', eightSecondsAgo)
+      .lt('started_at', fifteenSecondsAgo)
       .select();
 
     if (error) {
       console.error('Cleanup error:', error);
     } else {
-      console.log('Deleted old sessions:', deletedRecords?.length || 0, deletedRecords);
+      console.log('FORCE deleted old sessions:', deletedRecords?.length || 0, deletedRecords);
     }
 
     // Get fresh count after cleanup
@@ -41,7 +43,7 @@ export const useButtonHolds = () => {
       .select('*');
     
     if (!countError && currentHolds) {
-      console.log('Active sessions after cleanup:', currentHolds.length, currentHolds);
+      console.log('Active sessions after AGGRESSIVE cleanup:', currentHolds.length, currentHolds);
       setActiveHolders(currentHolds.length);
     }
   };
