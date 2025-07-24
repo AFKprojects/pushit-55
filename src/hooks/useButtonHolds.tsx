@@ -16,21 +16,19 @@ export const useButtonHolds = () => {
       return;
     }
 
-    // Cleanup old inactive holds and fetch current active count
+    // Cleanup old inactive holds and fetch initial active count
     const fetchActiveHolds = async () => {
-      // First cleanup holds older than 30 seconds that are still marked as active
+      // Cleanup holds older than 30 seconds
       const thirtySecondsAgo = new Date(Date.now() - 30000).toISOString();
       await supabase
         .from('button_holds')
-        .update({ is_active: false, ended_at: new Date().toISOString() })
-        .eq('is_active', true)
+        .delete()
         .lt('created_at', thirtySecondsAgo);
 
-      // Then get current active holds count
+      // Get current active holds count
       const { data, error } = await supabase
         .from('button_holds')
-        .select('id')
-        .eq('is_active', true);
+        .select('id');
       
       if (!error && data) {
         console.log('Active holds count:', data.length);
@@ -40,21 +38,35 @@ export const useButtonHolds = () => {
 
     fetchActiveHolds();
 
-    // Set up real-time subscription
+    // Set up real-time subscription with event-based counter updates
     const channel = supabase
       .channel('button-holds-changes')
       .on('postgres_changes', {
-        event: '*',
+        event: 'INSERT',
         schema: 'public',
         table: 'button_holds'
       }, (payload) => {
-        console.log('Button holds change:', payload);
-        fetchActiveHolds();
+        console.log('Hold started:', payload);
+        setActiveHolders(prev => prev + 1);
+      })
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'button_holds'
+      }, (payload) => {
+        console.log('Hold ended:', payload);
+        setActiveHolders(prev => Math.max(0, prev - 1));
       })
       .subscribe();
 
-    // Set up periodic cleanup every 10 seconds
-    const cleanupInterval = setInterval(fetchActiveHolds, 10000);
+    // Set up periodic cleanup every 5 seconds
+    const cleanupInterval = setInterval(async () => {
+      const thirtySecondsAgo = new Date(Date.now() - 30000).toISOString();
+      await supabase
+        .from('button_holds')
+        .delete()
+        .lt('created_at', thirtySecondsAgo);
+    }, 5000);
 
     return () => {
       supabase.removeChannel(channel);
@@ -68,15 +80,11 @@ export const useButtonHolds = () => {
     try {
       console.log('Starting hold for user:', user.id);
       
-      // First, cleanup any existing active holds for this user
+      // First, cleanup any existing holds for this user
       await supabase
         .from('button_holds')
-        .update({
-          ended_at: new Date().toISOString(),
-          is_active: false
-        })
-        .eq('user_id', user.id)
-        .eq('is_active', true);
+        .delete()
+        .eq('user_id', user.id);
 
       const { data, error } = await supabase
         .from('button_holds')
@@ -106,10 +114,7 @@ export const useButtonHolds = () => {
       console.log('Ending hold:', currentHoldId);
       const { error } = await supabase
         .from('button_holds')
-        .update({
-          ended_at: new Date().toISOString(),
-          is_active: false
-        })
+        .delete()
         .eq('id', currentHoldId);
 
       if (!error) {
