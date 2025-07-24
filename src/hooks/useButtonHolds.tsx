@@ -16,31 +16,14 @@ export const useButtonHolds = () => {
       return;
     }
 
-    // Cleanup old inactive holds and fetch initial active count
+    // Get current active holds count without cleanup since created_at column doesn't exist
     const fetchActiveHolds = async () => {
-      // Cleanup holds older than 10 seconds (for faster zombie session cleanup)
-      const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
-      console.log('Initial cleanup - removing holds older than:', tenSecondsAgo);
-      
-      const { data: deletedRecords, error: deleteError } = await supabase
-        .from('button_holds')
-        .delete()
-        .lt('created_at', tenSecondsAgo)
-        .select();
-
-      if (deleteError) {
-        console.error('Cleanup delete error:', deleteError);
-      } else {
-        console.log('Initial cleanup deleted records:', deletedRecords?.length || 0);
-      }
-
-      // Get current active holds count
       const { data, error } = await supabase
         .from('button_holds')
         .select('*');
       
       if (!error && data) {
-        console.log('All active holds after cleanup:', data);
+        console.log('All active holds:', data);
         console.log('Active holds count:', data.length);
         setActiveHolders(data.length);
       }
@@ -69,27 +52,11 @@ export const useButtonHolds = () => {
       })
       .subscribe();
 
-    // Set up periodic cleanup every 3 seconds for faster zombie session cleanup
-    const cleanupInterval = setInterval(async () => {
-      const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
-      console.log('Periodic cleanup - removing holds older than:', tenSecondsAgo);
-      
-      const { data: deletedRecords, error: deleteError } = await supabase
-        .from('button_holds')
-        .delete()
-        .lt('created_at', tenSecondsAgo)
-        .select();
-
-      if (deleteError) {
-        console.error('Periodic cleanup delete error:', deleteError);
-      } else if (deletedRecords && deletedRecords.length > 0) {
-        console.log('Periodic cleanup deleted records:', deletedRecords.length, deletedRecords);
-      }
-    }, 3000);
+    // Since created_at column doesn't exist, we'll need another approach for cleanup
+    // For now, let's rely on the real-time subscription and manual cleanup on hold end
 
     return () => {
       supabase.removeChannel(channel);
-      clearInterval(cleanupInterval);
     };
   }, [user]);
 
