@@ -20,17 +20,27 @@ export const useButtonHolds = () => {
     const fetchActiveHolds = async () => {
       // Cleanup holds older than 10 seconds (for faster zombie session cleanup)
       const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
-       await supabase
+      console.log('Initial cleanup - removing holds older than:', tenSecondsAgo);
+      
+      const { data: deletedRecords, error: deleteError } = await supabase
         .from('button_holds')
         .delete()
-        .lt('created_at', tenSecondsAgo);
+        .lt('created_at', tenSecondsAgo)
+        .select();
+
+      if (deleteError) {
+        console.error('Cleanup delete error:', deleteError);
+      } else {
+        console.log('Initial cleanup deleted records:', deletedRecords?.length || 0);
+      }
 
       // Get current active holds count
       const { data, error } = await supabase
         .from('button_holds')
-        .select('id');
+        .select('*');
       
       if (!error && data) {
+        console.log('All active holds after cleanup:', data);
         console.log('Active holds count:', data.length);
         setActiveHolders(data.length);
       }
@@ -62,10 +72,19 @@ export const useButtonHolds = () => {
     // Set up periodic cleanup every 3 seconds for faster zombie session cleanup
     const cleanupInterval = setInterval(async () => {
       const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
-      await supabase
+      console.log('Periodic cleanup - removing holds older than:', tenSecondsAgo);
+      
+      const { data: deletedRecords, error: deleteError } = await supabase
         .from('button_holds')
         .delete()
-        .lt('created_at', tenSecondsAgo);
+        .lt('created_at', tenSecondsAgo)
+        .select();
+
+      if (deleteError) {
+        console.error('Periodic cleanup delete error:', deleteError);
+      } else if (deletedRecords && deletedRecords.length > 0) {
+        console.log('Periodic cleanup deleted records:', deletedRecords.length, deletedRecords);
+      }
     }, 3000);
 
     return () => {
