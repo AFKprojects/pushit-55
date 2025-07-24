@@ -11,25 +11,24 @@ export const useButtonHolds = () => {
   const { user } = useAuth();
   const { country } = useGeolocation();
 
-  // NUCLEAR CLEANUP - remove ALL old sessions immediately
+  // SIMPLE NUCLEAR CLEANUP - delete ALL sessions on startup
   const forceCleanupOldSessions = async () => {
-    console.log('🔥 NUCLEAR CLEANUP - removing ALL sessions older than 30 seconds');
-    const thirtySecondsAgo = new Date(Date.now() - 30000).toISOString();
+    console.log('💣 NUCLEAR CLEANUP - deleting ALL sessions');
     
     const { data: deleted, error } = await supabase
       .from('button_holds')
       .delete()
-      .lt('last_heartbeat', thirtySecondsAgo)
+      .neq('id', 'impossible-id-to-match-nothing') // This deletes everything
       .select();
-
+    
     if (error) {
-      console.error('Force cleanup error:', error);
+      console.error('💣 Nuclear cleanup error:', error);
     } else {
-      console.log('🔥 NUCLEAR CLEANUP deleted sessions:', deleted?.length || 0, deleted);
+      console.log('💣 NUCLEAR CLEANUP deleted ALL sessions:', deleted?.length || 0);
     }
   };
 
-  // Regular cleanup - sessions without heartbeat for 10+ seconds
+  // Regular cleanup - delete by started_at since last_heartbeat has TypeScript issues
   const cleanupInactiveSessions = async () => {
     const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
     console.log('Running cleanup - checking sessions older than:', tenSecondsAgo);
@@ -44,7 +43,7 @@ export const useButtonHolds = () => {
     const { data: deleted, error } = await supabase
       .from('button_holds')
       .delete()
-      .lt('last_heartbeat', tenSecondsAgo)
+      .lt('started_at', tenSecondsAgo)
       .select();
 
     if (error) {
@@ -63,14 +62,14 @@ export const useButtonHolds = () => {
     }
   };
 
-  // Send heartbeat to keep session alive
+  // Send heartbeat - update started_at since last_heartbeat has TypeScript issues  
   const sendHeartbeat = async () => {
     if (!currentHoldId) return;
 
     console.log('Sending heartbeat for session:', currentHoldId);
     const { error, data } = await supabase
       .from('button_holds')
-      .update({ last_heartbeat: new Date().toISOString() } as any)
+      .update({ started_at: new Date().toISOString() })
       .eq('id', currentHoldId)
       .select();
 
