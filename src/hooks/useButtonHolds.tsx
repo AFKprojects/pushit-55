@@ -7,106 +7,75 @@ import { useGeolocation } from './useGeolocation';
 export const useButtonHolds = () => {
   const [activeHolders, setActiveHolders] = useState(0);
   const [currentHoldId, setCurrentHoldId] = useState<string | null>(null);
+  const [heartbeatInterval, setHeartbeatInterval] = useState<NodeJS.Timeout | null>(null);
   const { user } = useAuth();
   const { country } = useGeolocation();
+
+  // Cleanup inactive sessions based on started_at timestamp  
+  const cleanupInactiveSessions = async () => {
+    const eightSecondsAgo = new Date(Date.now() - 8000).toISOString();
+    console.log('Cleaning up sessions older than:', eightSecondsAgo);
+    
+    const { data: deletedRecords, error } = await supabase
+      .from('button_holds')
+      .delete()
+      .lt('started_at', eightSecondsAgo)
+      .select();
+
+    if (error) {
+      console.error('Cleanup error:', error);
+    } else if (deletedRecords && deletedRecords.length > 0) {
+      console.log('Cleaned up inactive sessions:', deletedRecords.length);
+    }
+
+    // Get fresh count after cleanup
+    const { data: currentHolds, error: countError } = await supabase
+      .from('button_holds')
+      .select('*');
+    
+    if (!countError && currentHolds) {
+      console.log('Active sessions after cleanup:', currentHolds.length);
+      setActiveHolders(currentHolds.length);
+    }
+  };
 
   useEffect(() => {
     if (!user) {
       setActiveHolders(0);
+      if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+        setHeartbeatInterval(null);
+      }
       return;
     }
 
-    // Cleanup old inactive holds and fetch initial active count
-    const fetchActiveHolds = async () => {
-      // Force cleanup all holds older than 30 seconds on initial load
-      const thirtySecondsAgo = new Date(Date.now() - 30000).toISOString();
-      console.log('Initial cleanup - removing holds older than:', thirtySecondsAgo);
-      
-      const { data: deletedRecords, error: deleteError } = await supabase
-        .from('button_holds')
-        .delete()
-        .lt('started_at', thirtySecondsAgo)
-        .select();
+    // Initial cleanup and count
+    cleanupInactiveSessions();
 
-      if (deleteError) {
-        console.error('Cleanup delete error:', deleteError);
-      } else {
-        console.log('Initial cleanup deleted records:', deletedRecords?.length || 0);
-      }
-
-      // Get current active holds count
-      const { data, error } = await supabase
-        .from('button_holds')
-        .select('*');
-      
-      if (!error && data) {
-        console.log('All active holds after cleanup:', data);
-        console.log('Active holds count:', data.length);
-        setActiveHolders(data.length);
-      }
-    };
-
-    fetchActiveHolds();
-
-    // Function to refresh count from database
-    const refreshCount = async () => {
-      const { data, error } = await supabase
-        .from('button_holds')
-        .select('*');
-      
-      if (!error && data) {
-        console.log('Refreshed count:', data.length);
-        setActiveHolders(data.length);
-      }
-    };
-
-    // Set up real-time subscription for immediate feedback only
+    // Set up real-time subscription for changes
     const channel = supabase
       .channel('button-holds-changes')
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'button_holds'
-      }, (payload) => {
-        console.log('Hold change detected:', payload);
-        // Immediately refresh count from database instead of relying on events
-        refreshCount();
+      }, () => {
+        // Just refresh count after any change
+        cleanupInactiveSessions();
       })
       .subscribe();
 
-    // Set up periodic cleanup every 3 seconds for faster zombie session cleanup
-    const cleanupInterval = setInterval(async () => {
-      const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
-      console.log('Periodic cleanup - removing holds older than:', tenSecondsAgo);
-      
-      const { data: deletedRecords, error: deleteError } = await supabase
-        .from('button_holds')
-        .delete()
-        .lt('started_at', tenSecondsAgo)
-        .select();
-
-      if (deleteError) {
-        console.error('Periodic cleanup delete error:', deleteError);
-      } else if (deletedRecords && deletedRecords.length > 0) {
-        console.log('Periodic cleanup deleted records:', deletedRecords.length, deletedRecords);
-        
-        // After cleanup, refresh the actual count from database
-        const { data: currentHolds, error: countError } = await supabase
-          .from('button_holds')
-          .select('*');
-        
-        if (!countError && currentHolds) {
-          console.log('Updating count after cleanup to:', currentHolds.length);
-          setActiveHolders(currentHolds.length);
-        }
-      }
-    }, 3000);
+    // Periodic cleanup every 3 seconds
+    const cleanupInterval = setInterval(cleanupInactiveSessions, 3000);
 
     return () => {
       supabase.removeChannel(channel);
       clearInterval(cleanupInterval);
+      if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+      }
     };
-  }, [user]);
+  }, [user, heartbeatInterval]);
 
   const startHold = async () => {
     if (!user) return;
@@ -114,45 +83,16 @@ export const useButtonHolds = () => {
     try {
       console.log('Starting hold for user:', user.id);
       
-      // First, check what exists in the database
-      const { data: existingHolds, error: selectError } = await supabase
-        .from('button_holds')
-        .select('*');
+      // Auto-cleanup before starting new session
+      await cleanupInactiveSessions();
       
-      if (!selectError) {
-        console.log('All holds before cleanup:', existingHolds);
-      }
-      
-      // Cleanup any existing holds for this user
-      console.log('Cleaning up existing holds for user:', user.id);
-      const { data: deletedUserHolds, error: deleteUserError } = await supabase
+      // Remove any existing session for this user
+      await supabase
         .from('button_holds')
         .delete()
-        .eq('user_id', user.id)
-        .select();
+        .eq('user_id', user.id);
 
-      if (deleteUserError) {
-        console.error('Error deleting user holds:', deleteUserError);
-      } else {
-        console.log('Deleted user holds:', deletedUserHolds?.length || 0, deletedUserHolds);
-      }
-
-      // Also cleanup old inactive holds
-      const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
-      console.log('Cleaning up old holds older than:', tenSecondsAgo);
-      const { data: deletedOldHolds, error: deleteOldError } = await supabase
-        .from('button_holds')
-        .delete()
-        .lt('started_at', tenSecondsAgo)
-        .select();
-
-      if (deleteOldError) {
-        console.error('Error deleting old holds:', deleteOldError);
-      } else if (deletedOldHolds && deletedOldHolds.length > 0) {
-        console.log('Deleted old holds:', deletedOldHolds.length, deletedOldHolds);
-      }
-
-      // Now insert the new hold
+      // Insert new session
       const { data, error } = await supabase
         .from('button_holds')
         .insert({
@@ -167,14 +107,15 @@ export const useButtonHolds = () => {
         console.log('Hold started with ID:', data.id);
         setCurrentHoldId(data.id);
         
-        // Check final state
-        const { data: finalHolds, error: finalError } = await supabase
-          .from('button_holds')
-          .select('*');
+        // Start heartbeat by periodically updating started_at to keep session fresh
+        const interval = setInterval(async () => {
+          await supabase
+            .from('button_holds')
+            .update({ started_at: new Date().toISOString() })
+            .eq('id', data.id);
+        }, 3000); // Update every 3 seconds
         
-        if (!finalError) {
-          console.log('All holds after insert:', finalHolds);
-        }
+        setHeartbeatInterval(interval);
       } else {
         console.error('Error starting hold:', error);
       }
@@ -188,6 +129,13 @@ export const useButtonHolds = () => {
 
     try {
       console.log('Ending hold:', currentHoldId);
+      
+      // Stop heartbeat
+      if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+        setHeartbeatInterval(null);
+      }
+      
       const { error } = await supabase
         .from('button_holds')
         .delete()
