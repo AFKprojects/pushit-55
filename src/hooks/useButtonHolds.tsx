@@ -91,14 +91,19 @@ export const useButtonHolds = () => {
     try {
       console.log('Starting hold for user:', user.id);
       
-      // Auto-cleanup before starting new session
-      await cleanupInactiveSessions();
-      
-      // Remove any existing session for this user
-      await supabase
+      // NUCLEAR CLEANUP - delete ALL sessions first (including zombies from other users)
+      console.log('NUCLEAR CLEANUP - deleting ALL sessions...');
+      const { data: allDeleted, error: nuclearError } = await supabase
         .from('button_holds')
         .delete()
-        .eq('user_id', user.id);
+        .neq('id', '00000000-0000-0000-0000-000000000000') // Delete everything
+        .select();
+
+      if (nuclearError) {
+        console.error('Nuclear cleanup error:', nuclearError);
+      } else {
+        console.log('NUCLEAR: Deleted ALL sessions:', allDeleted?.length || 0);
+      }
 
       // Insert new session
       const { data, error } = await supabase
