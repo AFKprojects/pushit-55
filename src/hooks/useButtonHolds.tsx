@@ -99,12 +99,45 @@ export const useButtonHolds = () => {
     try {
       console.log('Starting hold for user:', user.id);
       
-      // First, cleanup any existing holds for this user
-      await supabase
+      // First, check what exists in the database
+      const { data: existingHolds, error: selectError } = await supabase
+        .from('button_holds')
+        .select('*');
+      
+      if (!selectError) {
+        console.log('All holds before cleanup:', existingHolds);
+      }
+      
+      // Cleanup any existing holds for this user
+      console.log('Cleaning up existing holds for user:', user.id);
+      const { data: deletedUserHolds, error: deleteUserError } = await supabase
         .from('button_holds')
         .delete()
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .select();
 
+      if (deleteUserError) {
+        console.error('Error deleting user holds:', deleteUserError);
+      } else {
+        console.log('Deleted user holds:', deletedUserHolds?.length || 0, deletedUserHolds);
+      }
+
+      // Also cleanup old inactive holds
+      const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
+      console.log('Cleaning up old holds older than:', tenSecondsAgo);
+      const { data: deletedOldHolds, error: deleteOldError } = await supabase
+        .from('button_holds')
+        .delete()
+        .lt('started_at', tenSecondsAgo)
+        .select();
+
+      if (deleteOldError) {
+        console.error('Error deleting old holds:', deleteOldError);
+      } else if (deletedOldHolds && deletedOldHolds.length > 0) {
+        console.log('Deleted old holds:', deletedOldHolds.length, deletedOldHolds);
+      }
+
+      // Now insert the new hold
       const { data, error } = await supabase
         .from('button_holds')
         .insert({
@@ -118,6 +151,15 @@ export const useButtonHolds = () => {
       if (!error && data) {
         console.log('Hold started with ID:', data.id);
         setCurrentHoldId(data.id);
+        
+        // Check final state
+        const { data: finalHolds, error: finalError } = await supabase
+          .from('button_holds')
+          .select('*');
+        
+        if (!finalError) {
+          console.log('All holds after insert:', finalHolds);
+        }
       } else {
         console.error('Error starting hold:', error);
       }
