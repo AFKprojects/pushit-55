@@ -11,10 +11,17 @@ export const useButtonHolds = () => {
   const { user } = useAuth();
   const { country } = useGeolocation();
 
-  // Cleanup inactive sessions based on started_at timestamp  
+  // Cleanup inactive sessions and get fresh count
   const cleanupInactiveSessions = async () => {
     const eightSecondsAgo = new Date(Date.now() - 8000).toISOString();
     console.log('Cleaning up sessions older than:', eightSecondsAgo);
+    
+    // First, let's see what's in the database
+    const { data: allSessions, error: selectError } = await supabase
+      .from('button_holds')
+      .select('*');
+    
+    console.log('All sessions before cleanup:', allSessions);
     
     const { data: deletedRecords, error } = await supabase
       .from('button_holds')
@@ -24,8 +31,8 @@ export const useButtonHolds = () => {
 
     if (error) {
       console.error('Cleanup error:', error);
-    } else if (deletedRecords && deletedRecords.length > 0) {
-      console.log('Cleaned up inactive sessions:', deletedRecords.length);
+    } else {
+      console.log('Deleted old sessions:', deletedRecords?.length || 0, deletedRecords);
     }
 
     // Get fresh count after cleanup
@@ -34,7 +41,7 @@ export const useButtonHolds = () => {
       .select('*');
     
     if (!countError && currentHolds) {
-      console.log('Active sessions after cleanup:', currentHolds.length);
+      console.log('Active sessions after cleanup:', currentHolds.length, currentHolds);
       setActiveHolders(currentHolds.length);
     }
   };
