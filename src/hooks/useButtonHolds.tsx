@@ -68,6 +68,9 @@ export const useButtonHolds = () => {
     try {
       console.log('Starting hold for user:', user.id);
       
+      // Immediately increment local counter for instant feedback
+      setActiveHolders(prev => prev + 1);
+      
       // First, cleanup any existing active holds for this user
       await supabase
         .from('button_holds')
@@ -93,9 +96,13 @@ export const useButtonHolds = () => {
         setCurrentHoldId(data.id);
       } else {
         console.error('Error starting hold:', error);
+        // Revert local increment if database operation failed
+        setActiveHolders(prev => Math.max(0, prev - 1));
       }
     } catch (error) {
       console.error('Error starting hold:', error);
+      // Revert local increment if operation failed
+      setActiveHolders(prev => Math.max(0, prev - 1));
     }
   };
 
@@ -104,6 +111,10 @@ export const useButtonHolds = () => {
 
     try {
       console.log('Ending hold:', currentHoldId);
+      
+      // Immediately decrement local counter for instant feedback
+      setActiveHolders(prev => Math.max(0, prev - 1));
+      
       const { error } = await supabase
         .from('button_holds')
         .update({
@@ -117,9 +128,13 @@ export const useButtonHolds = () => {
         setCurrentHoldId(null);
       } else {
         console.error('Error ending hold:', error);
+        // Revert local decrement if database operation failed
+        setActiveHolders(prev => prev + 1);
       }
     } catch (error) {
       console.error('Error ending hold:', error);
+      // Revert local decrement if operation failed
+      setActiveHolders(prev => prev + 1);
     }
   };
 
