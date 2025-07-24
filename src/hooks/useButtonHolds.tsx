@@ -62,13 +62,16 @@ export const useButtonHolds = () => {
       console.log('Cleanup deleted inactive sessions:', deleted?.length || 0);
     }
 
-    // Get fresh count
+    // Get fresh count - ALWAYS update UI state
     const { data: currentHolds, error: countError } = await supabase
       .from('button_holds')
       .select('*');
     
+    console.log('📊 Current active sessions:', currentHolds?.length || 0);
+    
     if (!countError && currentHolds) {
       setActiveHolders(currentHolds.length);
+      console.log('📊 Updated UI activeHolders to:', currentHolds.length);
     }
   };
 
