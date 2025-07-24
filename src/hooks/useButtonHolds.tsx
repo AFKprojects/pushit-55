@@ -11,20 +11,30 @@ export const useButtonHolds = () => {
   const { user } = useAuth();
   const { country } = useGeolocation();
 
-  // SIMPLE NUCLEAR CLEANUP - delete ALL sessions on startup
+  // ULTIMATE NUCLEAR CLEANUP - delete ALL sessions by selecting all and deleting
   const forceCleanupOldSessions = async () => {
-    console.log('💣 NUCLEAR CLEANUP - deleting ALL sessions');
+    console.log('💣 ULTIMATE NUCLEAR CLEANUP - deleting ALL sessions');
     
-    const { data: deleted, error } = await supabase
+    // First get all sessions
+    const { data: allSessions } = await supabase
       .from('button_holds')
-      .delete()
-      .neq('id', 'impossible-id-to-match-nothing') // This deletes everything
-      .select();
+      .select('id');
     
-    if (error) {
-      console.error('💣 Nuclear cleanup error:', error);
+    if (allSessions && allSessions.length > 0) {
+      // Delete each session by ID
+      for (const session of allSessions) {
+        const { error } = await supabase
+          .from('button_holds')
+          .delete()
+          .eq('id', session.id);
+        
+        if (!error) {
+          console.log('💣 Deleted session:', session.id);
+        }
+      }
+      console.log('💣 NUCLEAR CLEANUP deleted ALL sessions:', allSessions.length);
     } else {
-      console.log('💣 NUCLEAR CLEANUP deleted ALL sessions:', deleted?.length || 0);
+      console.log('💣 No sessions to delete');
     }
   };
 
