@@ -84,6 +84,16 @@ export const useButtonHolds = () => {
         console.error('Periodic cleanup delete error:', deleteError);
       } else if (deletedRecords && deletedRecords.length > 0) {
         console.log('Periodic cleanup deleted records:', deletedRecords.length, deletedRecords);
+        
+        // After cleanup, refresh the actual count from database
+        const { data: currentHolds, error: countError } = await supabase
+          .from('button_holds')
+          .select('*');
+        
+        if (!countError && currentHolds) {
+          console.log('Updating count after cleanup to:', currentHolds.length);
+          setActiveHolders(currentHolds.length);
+        }
       }
     }, 3000);
 
