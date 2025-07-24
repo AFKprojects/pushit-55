@@ -16,6 +16,7 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showResendConfirmation, setShowResendConfirmation] = useState(false);
   const { signUp, signIn, signInWithGoogle } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -41,11 +42,21 @@ const Auth = () => {
         : await signUp(email, password);
 
       if (error) {
-        toast({
-          title: "Error",
-          description: error.message,
-          variant: "destructive",
-        });
+        // Special handling for email not confirmed error
+        if (error.message === "Email not confirmed") {
+          setShowResendConfirmation(true);
+          toast({
+            title: "Email Not Confirmed",
+            description: "Please check your email and click the confirmation link, or resend the confirmation email.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: error.message,
+            variant: "destructive",
+          });
+        }
       } else if (!isLogin) {
         toast({
           title: "Success",
@@ -133,6 +144,50 @@ const Auth = () => {
           description: "Password updated successfully",
         });
         navigate('/');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!email) {
+      toast({
+        title: "Error",
+        description: "Please enter your email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`
+        }
+      });
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "Confirmation email sent! Please check your inbox.",
+        });
+        setShowResendConfirmation(false);
       }
     } catch (error) {
       toast({
@@ -387,6 +442,32 @@ const Auth = () => {
             )}
           </Button>
         </form>
+
+        {showResendConfirmation && isLogin && (
+          <div className="mt-4 p-4 bg-orange-500/10 border border-orange-500/30 rounded-lg">
+            <p className="text-orange-200 text-sm mb-3 text-center">
+              Need to confirm your email?
+            </p>
+            <Button
+              onClick={handleResendConfirmation}
+              disabled={loading}
+              variant="outline"
+              className="w-full border-orange-500/50 text-orange-200 hover:bg-orange-500/20"
+            >
+              {loading ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Mail className="mr-2 h-4 w-4" />
+                  Resend Confirmation Email
+                </>
+              )}
+            </Button>
+          </div>
+        )}
 
         <div className="my-6 text-center">
           <div className="relative">
