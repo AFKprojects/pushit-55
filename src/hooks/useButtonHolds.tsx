@@ -41,7 +41,7 @@ export const useButtonHolds = () => {
   // Regular cleanup - delete by started_at since last_heartbeat has TypeScript issues
   const cleanupInactiveSessions = async () => {
     const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
-    console.log('Running cleanup - checking sessions older than:', tenSecondsAgo);
+    console.log('🔄 Running cleanup - checking sessions older than:', tenSecondsAgo);
     
     // First check what sessions exist
     const { data: allSessions, error: checkError } = await supabase
