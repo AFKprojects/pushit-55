@@ -48,24 +48,29 @@ export const useButtonHolds = () => {
 
     fetchActiveHolds();
 
-    // Set up real-time subscription with event-based counter updates
+    // Function to refresh count from database
+    const refreshCount = async () => {
+      const { data, error } = await supabase
+        .from('button_holds')
+        .select('*');
+      
+      if (!error && data) {
+        console.log('Refreshed count:', data.length);
+        setActiveHolders(data.length);
+      }
+    };
+
+    // Set up real-time subscription for immediate feedback only
     const channel = supabase
       .channel('button-holds-changes')
       .on('postgres_changes', {
-        event: 'INSERT',
+        event: '*',
         schema: 'public',
         table: 'button_holds'
       }, (payload) => {
-        console.log('Hold started:', payload);
-        setActiveHolders(prev => prev + 1);
-      })
-      .on('postgres_changes', {
-        event: 'DELETE',
-        schema: 'public',
-        table: 'button_holds'
-      }, (payload) => {
-        console.log('Hold ended:', payload);
-        setActiveHolders(prev => Math.max(0, prev - 1));
+        console.log('Hold change detected:', payload);
+        // Immediately refresh count from database instead of relying on events
+        refreshCount();
       })
       .subscribe();
 
