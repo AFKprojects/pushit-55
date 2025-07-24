@@ -18,14 +18,14 @@ export const useButtonHolds = () => {
 
     // Cleanup old inactive holds and fetch initial active count
     const fetchActiveHolds = async () => {
-      // Cleanup holds older than 10 seconds (for faster zombie session cleanup)
-      const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
-      console.log('Initial cleanup - removing holds older than:', tenSecondsAgo);
+      // Force cleanup all holds older than 30 seconds on initial load
+      const thirtySecondsAgo = new Date(Date.now() - 30000).toISOString();
+      console.log('Initial cleanup - removing holds older than:', thirtySecondsAgo);
       
       const { data: deletedRecords, error: deleteError } = await supabase
         .from('button_holds')
         .delete()
-        .lt('started_at', tenSecondsAgo)
+        .lt('started_at', thirtySecondsAgo)
         .select();
 
       if (deleteError) {
