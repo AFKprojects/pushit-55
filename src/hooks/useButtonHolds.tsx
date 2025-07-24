@@ -11,20 +11,21 @@ export const useButtonHolds = () => {
   const { user } = useAuth();
   const { country } = useGeolocation();
 
-  // Force cleanup all sessions older than 1 minute (app startup)
+  // NUCLEAR CLEANUP - remove ALL old sessions immediately
   const forceCleanupOldSessions = async () => {
-    const oneMinuteAgo = new Date(Date.now() - 60000).toISOString();
+    console.log('🔥 NUCLEAR CLEANUP - removing ALL sessions older than 30 seconds');
+    const thirtySecondsAgo = new Date(Date.now() - 30000).toISOString();
     
     const { data: deleted, error } = await supabase
       .from('button_holds')
       .delete()
-      .lt('last_heartbeat', oneMinuteAgo)
+      .lt('last_heartbeat', thirtySecondsAgo)
       .select();
 
     if (error) {
       console.error('Force cleanup error:', error);
     } else {
-      console.log('Force cleanup deleted old sessions:', deleted?.length || 0);
+      console.log('🔥 NUCLEAR CLEANUP deleted sessions:', deleted?.length || 0, deleted);
     }
   };
 
