@@ -102,7 +102,7 @@ export const useButtonHolds = () => {
     // Initial force cleanup and count
     forceCleanupOldSessions().then(() => cleanupInactiveSessions());
 
-    // Set up real-time subscription for changes - NO NUCLEAR CLEANUP HERE
+    // Set up real-time subscription for changes - NO CLEANUP HERE AT ALL
     const channel = supabase
       .channel('button-holds-changes')
       .on('postgres_changes', {
@@ -110,8 +110,17 @@ export const useButtonHolds = () => {
         schema: 'public',
         table: 'button_holds'
       }, () => {
-        // Just regular cleanup, NO nuclear cleanup during real-time updates
-        cleanupInactiveSessions();
+        // Only refresh the count, NO cleanup during real-time updates
+        console.log('🔄 Real-time change detected, refreshing count only');
+        supabase
+          .from('button_holds')
+          .select('*')
+          .then(({ data, error }) => {
+            if (!error && data) {
+              console.log('📊 Real-time count update:', data.length);
+              setActiveHolders(data.length);
+            }
+          });
       })
       .subscribe();
 
