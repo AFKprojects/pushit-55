@@ -6,10 +6,30 @@ import { useGeolocation } from './useGeolocation';
 interface SessionData {
   id: string;
   user_id: string;
+  device_id?: string;
   started_at: string;
-  country: string;
+  last_heartbeat?: string;
+  country?: string;
   is_active: boolean;
+  duration_seconds?: number;
+  ended_at?: string;
 }
+
+// Generate device fingerprint for session management
+const getDeviceId = () => {
+  if (typeof window === 'undefined') return 'server';
+  
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  ctx?.fillText('fingerprint', 10, 10);
+  
+  return btoa(
+    navigator.userAgent + 
+    canvas.toDataURL() + 
+    (navigator.hardwareConcurrency || 0) +
+    (screen.width + screen.height)
+  ).slice(0, 32);
+};
 
 export const useSessionManager = () => {
   const [activeSessions, setActiveSessions] = useState<SessionData[]>([]);
@@ -21,18 +41,22 @@ export const useSessionManager = () => {
   
   const heartbeatInterval = useRef<NodeJS.Timeout | null>(null);
   const cleanupInterval = useRef<NodeJS.Timeout | null>(null);
+  const deviceId = useRef<string>(getDeviceId());
 
-  // Fetch current active sessions
+  // Fetch current active sessions using started_at (fallback until last_heartbeat column exists)
   const fetchActiveSessions = useCallback(async () => {
     try {
+      const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
+      
       const { data, error } = await supabase
         .from('button_holds')
         .select('*')
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .gt('started_at', tenSecondsAgo);
       
       if (!error && data) {
         setActiveSessions(data as SessionData[]);
-        console.log('📊 Active sessions fetched:', data.length);
+        console.log('📊 Active sessions fetched:', data.length, 'newer than', tenSecondsAgo);
       } else {
         console.error('Error fetching sessions:', error);
       }
@@ -41,31 +65,34 @@ export const useSessionManager = () => {
     }
   }, []);
 
-  // Clean up inactive sessions - much more aggressive cleanup
+  // Clean up inactive sessions using started_at (fallback until last_heartbeat column exists)
   const cleanupInactiveSessions = useCallback(async () => {
     const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
     
     try {
-      console.log('🧹 Starting cleanup of sessions older than:', tenSecondsAgo);
+      console.log('🧹 Starting cleanup of sessions with started_at older than:', tenSecondsAgo);
       
-      // Get all sessions to see what we're cleaning
-      const { data: allSessions } = await supabase
+      // Get sessions before cleanup for logging
+      const { data: beforeCleanup } = await supabase
         .from('button_holds')
         .select('*');
       
-      console.log('🧹 All sessions before cleanup:', allSessions);
+      console.log('🧹 Sessions before cleanup:', beforeCleanup?.length);
       
-      // Delete old sessions
+      // Delete sessions with old started_at
       const { data: deleted, error } = await supabase
         .from('button_holds')
         .delete()
         .lt('started_at', tenSecondsAgo)
-        .select();
+        .select('*');
       
       if (error) {
         console.error('Cleanup error:', error);
       } else {
-        console.log('🧹 Cleaned up sessions:', deleted?.length || 0);
+        console.log('🧹 Cleanup completed - deleted sessions:', deleted?.length || 0);
+        if (deleted?.length) {
+          console.log('🧹 Deleted sessions details:', deleted);
+        }
       }
       
       // Refresh sessions after cleanup
@@ -75,22 +102,23 @@ export const useSessionManager = () => {
     }
   }, [fetchActiveSessions]);
 
-  // Send heartbeat for current session - update started_at to keep it alive
+  // Send heartbeat for current session - update started_at to keep it alive (fallback)
   const sendHeartbeat = useCallback(async () => {
     if (!currentSessionId) return;
 
     try {
-      console.log('💓 Sending heartbeat for session:', currentSessionId);
+      const heartbeatTime = new Date().toISOString();
+      console.log('💓 Sending heartbeat for session:', currentSessionId, 'at', heartbeatTime);
       
       const { error } = await supabase
         .from('button_holds')
-        .update({ started_at: new Date().toISOString() })
+        .update({ started_at: heartbeatTime })
         .eq('id', currentSessionId);
       
       if (error) {
-        console.error('Heartbeat error:', error);
+        console.error('💓 Heartbeat failed:', error);
       } else {
-        console.log('💓 Heartbeat sent successfully');
+        console.log('✅ Heartbeat sent successfully at', heartbeatTime);
       }
     } catch (error) {
       console.error('Error sending heartbeat:', error);
@@ -102,7 +130,7 @@ export const useSessionManager = () => {
     if (!user || isHolding) return;
 
     try {
-      console.log('🚀 Starting new session for user:', user.id);
+      console.log('🚀 Starting new session for user:', user.id, 'device:', deviceId.current);
       
       // Remove any existing sessions for this user first
       await supabase
@@ -110,30 +138,31 @@ export const useSessionManager = () => {
         .delete()
         .eq('user_id', user.id);
 
-      // Create new session
+      const now = new Date().toISOString();
+      
+      // Create new session (using existing schema)
       const { data, error } = await supabase
         .from('button_holds')
         .insert({
           user_id: user.id,
           is_active: true,
-          country: country || 'Unknown',
-          started_at: new Date().toISOString()
+          started_at: now
         })
         .select()
         .single();
 
       if (!error && data) {
-        console.log('✅ Session created:', data.id);
+        console.log('✅ Session created:', data.id, 'started at:', now);
         setCurrentSessionId(data.id);
         setIsHolding(true);
         
-        // Start heartbeat every 3 seconds (aggressive)
+        // Start heartbeat every 3 seconds
         heartbeatInterval.current = setInterval(sendHeartbeat, 3000);
         
         // Immediate refresh of sessions
         await fetchActiveSessions();
       } else {
-        console.error('Error creating session:', error);
+        console.error('❌ Error creating session:', error);
       }
     } catch (error) {
       console.error('Error starting session:', error);
@@ -154,15 +183,19 @@ export const useSessionManager = () => {
       }
 
       // Delete session
-      await supabase
+      const { error } = await supabase
         .from('button_holds')
         .delete()
         .eq('id', currentSessionId);
 
+      if (error) {
+        console.error('❌ Error deleting session:', error);
+      } else {
+        console.log('✅ Session ended successfully:', currentSessionId);
+      }
+
       setCurrentSessionId(null);
       setIsHolding(false);
-      
-      console.log('✅ Session ended successfully');
       
       // Immediate refresh of sessions
       await fetchActiveSessions();
@@ -185,7 +218,7 @@ export const useSessionManager = () => {
     // Initial fetch
     fetchActiveSessions();
 
-    // Setup cleanup interval (every 5 seconds - aggressive)
+    // Setup cleanup interval (every 5 seconds with 10-second buffer)
     cleanupInterval.current = setInterval(cleanupInactiveSessions, 5000);
 
     // Setup real-time subscription
