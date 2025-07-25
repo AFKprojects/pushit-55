@@ -11,32 +11,6 @@ export const useButtonHolds = () => {
   const { user } = useAuth();
   const { country } = useGeolocation();
 
-  // ULTIMATE NUCLEAR CLEANUP - delete ALL sessions by selecting all and deleting
-  const forceCleanupOldSessions = async () => {
-    console.log('💣 ULTIMATE NUCLEAR CLEANUP - deleting ALL sessions');
-    
-    // First get all sessions
-    const { data: allSessions } = await supabase
-      .from('button_holds')
-      .select('id');
-    
-    if (allSessions && allSessions.length > 0) {
-      // Delete each session by ID
-      for (const session of allSessions) {
-        const { error } = await supabase
-          .from('button_holds')
-          .delete()
-          .eq('id', session.id);
-        
-        if (!error) {
-          console.log('💣 Deleted session:', session.id);
-        }
-      }
-      console.log('💣 NUCLEAR CLEANUP deleted ALL sessions:', allSessions.length);
-    } else {
-      console.log('💣 No sessions to delete');
-    }
-  };
 
   // Regular cleanup - delete by started_at since last_heartbeat has TypeScript issues
   const cleanupInactiveSessions = async () => {
@@ -99,8 +73,8 @@ export const useButtonHolds = () => {
       return;
     }
 
-    // Initial force cleanup and count
-    forceCleanupOldSessions().then(() => cleanupInactiveSessions());
+    // Initial cleanup and count
+    cleanupInactiveSessions();
 
     // Set up real-time subscription for changes - NO CLEANUP HERE AT ALL
     const channel = supabase
