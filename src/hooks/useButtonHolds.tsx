@@ -12,10 +12,10 @@ export const useButtonHolds = () => {
   const { country } = useGeolocation();
 
 
-  // Regular cleanup - delete by started_at since last_heartbeat has TypeScript issues
+  // Regular cleanup - delete sessions older than 30 seconds (longer timeout for heartbeat)
   const cleanupInactiveSessions = async () => {
-    const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
-    console.log('🔄 Running cleanup - checking sessions older than:', tenSecondsAgo);
+    const thirtySecondsAgo = new Date(Date.now() - 30000).toISOString();
+    console.log('🔄 Running cleanup - checking sessions older than:', thirtySecondsAgo);
     
     // First check what sessions exist
     const { data: allSessions, error: checkError } = await supabase
@@ -27,7 +27,7 @@ export const useButtonHolds = () => {
     const { data: deleted, error } = await supabase
       .from('button_holds')
       .delete()
-      .lt('started_at', tenSecondsAgo)
+      .lt('started_at', thirtySecondsAgo)
       .select();
 
     if (error) {
@@ -49,7 +49,7 @@ export const useButtonHolds = () => {
     }
   };
 
-  // Send heartbeat - update started_at since last_heartbeat has TypeScript issues  
+  // Send heartbeat - update started_at to keep session alive (simulates last_heartbeat)
   const sendHeartbeat = async () => {
     if (!currentHoldId) return;
 
