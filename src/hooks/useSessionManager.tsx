@@ -167,11 +167,25 @@ export const useSessionManager = () => {
         setCurrentSessionId(data.id);
         setIsHolding(true);
         
-        // Send immediate heartbeat to ensure last_heartbeat is fresh
-        await sendHeartbeat();
+        // Wait for state to update, then send heartbeat
+        setTimeout(async () => {
+          console.log('📥 Sending immediate heartbeat for session:', data.id);
+          
+          const heartbeatTime = new Date().toISOString();
+          const { error: heartbeatError } = await supabase
+            .from('button_holds')
+            .update({ last_heartbeat: heartbeatTime })
+            .eq('id', data.id);
+            
+          if (heartbeatError) {
+            console.error('❌ Immediate heartbeat failed:', heartbeatError);
+          } else {
+            console.log('✅ Immediate heartbeat sent successfully');
+          }
+        }, 100);
         
         // Start heartbeat every 3 seconds
-        heartbeatInterval.current = setInterval(sendHeartbeat, 3000);
+        heartbeatInterval.current = setInterval(() => sendHeartbeat(), 3000);
         
         // Immediate refresh of sessions
         await fetchActiveSessions();
