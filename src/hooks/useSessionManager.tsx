@@ -43,7 +43,7 @@ export const useSessionManager = () => {
   const cleanupInterval = useRef<NodeJS.Timeout | null>(null);
   const deviceId = useRef<string>(getDeviceId());
 
-  // Fetch current active sessions using started_at (fallback until last_heartbeat column exists)
+  // Fetch current active sessions using last_heartbeat
   const fetchActiveSessions = useCallback(async () => {
     try {
       const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
@@ -52,7 +52,7 @@ export const useSessionManager = () => {
         .from('button_holds')
         .select('*')
         .eq('is_active', true)
-        .gt('started_at', tenSecondsAgo);
+        .gt('last_heartbeat' as any, tenSecondsAgo);
       
       if (!error && data) {
         setActiveSessions(data as SessionData[]);
@@ -65,12 +65,12 @@ export const useSessionManager = () => {
     }
   }, []);
 
-  // Clean up inactive sessions using started_at (fallback until last_heartbeat column exists)
+  // Clean up inactive sessions using last_heartbeat
   const cleanupInactiveSessions = useCallback(async () => {
     const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
     
     try {
-      console.log('🧹 Starting cleanup of sessions with started_at older than:', tenSecondsAgo);
+      console.log('🧹 Starting cleanup of sessions with last_heartbeat older than:', tenSecondsAgo);
       
       // Get sessions before cleanup for logging
       const { data: beforeCleanup } = await supabase
@@ -79,11 +79,11 @@ export const useSessionManager = () => {
       
       console.log('🧹 Sessions before cleanup:', beforeCleanup?.length);
       
-      // Delete sessions with old started_at
+      // Delete sessions with old last_heartbeat
       const { data: deleted, error } = await supabase
         .from('button_holds')
         .delete()
-        .lt('started_at', tenSecondsAgo)
+        .lt('last_heartbeat' as any, tenSecondsAgo)
         .select('*');
       
       if (error) {
@@ -102,7 +102,7 @@ export const useSessionManager = () => {
     }
   }, [fetchActiveSessions]);
 
-  // Send heartbeat for current session - update started_at to keep it alive (fallback)
+  // Send heartbeat for current session - update last_heartbeat to keep it alive
   const sendHeartbeat = useCallback(async () => {
     if (!currentSessionId) return;
 
@@ -112,7 +112,7 @@ export const useSessionManager = () => {
       
       const { error } = await supabase
         .from('button_holds')
-        .update({ started_at: heartbeatTime })
+        .update({ last_heartbeat: heartbeatTime } as any)
         .eq('id', currentSessionId);
       
       if (error) {
@@ -140,14 +140,17 @@ export const useSessionManager = () => {
 
       const now = new Date().toISOString();
       
-      // Create new session (using existing schema)
+      // Create new session with device_id and proper heartbeat
       const { data, error } = await supabase
         .from('button_holds')
         .insert({
           user_id: user.id,
+          device_id: deviceId.current,
           is_active: true,
-          started_at: now
-        })
+          started_at: now,
+          last_heartbeat: now,
+          country: country
+        } as any)
         .select()
         .single();
 
