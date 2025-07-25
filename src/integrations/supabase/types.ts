@@ -12,28 +12,34 @@ export type Database = {
       button_holds: {
         Row: {
           country: string | null
+          device_id: string | null
           duration_seconds: number | null
           ended_at: string | null
           id: string
           is_active: boolean | null
+          last_heartbeat: string | null
           started_at: string | null
           user_id: string | null
         }
         Insert: {
           country?: string | null
+          device_id?: string | null
           duration_seconds?: number | null
           ended_at?: string | null
           id?: string
           is_active?: boolean | null
+          last_heartbeat?: string | null
           started_at?: string | null
           user_id?: string | null
         }
         Update: {
           country?: string | null
+          device_id?: string | null
           duration_seconds?: number | null
           ended_at?: string | null
           id?: string
           is_active?: boolean | null
+          last_heartbeat?: string | null
           started_at?: string | null
           user_id?: string | null
         }
