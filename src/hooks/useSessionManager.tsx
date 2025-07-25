@@ -95,6 +95,13 @@ export const useSessionManager = () => {
         console.error('Cleanup error:', error);
       } else {
         console.log('🧹 Cleanup completed - deleted sessions:', deleted?.length || 0);
+        if (deleted && deleted.length > 0) {
+          console.log('🗑️ Deleted sessions:', deleted.map(s => s.id));
+          // Check if we deleted our own session
+          if (currentSessionId && deleted.some(s => s.id === currentSessionId)) {
+            console.log('🚨 WARNING: Cleanup deleted our active session!', currentSessionId);
+          }
+        }
       }
       
       // Refresh sessions after cleanup
