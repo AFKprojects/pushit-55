@@ -197,8 +197,27 @@ export const useSessionManager = () => {
           }
         }, 100);
         
-        // Start heartbeat every 3 seconds
-        heartbeatInterval.current = setInterval(() => sendHeartbeat(), 3000);
+        // Start heartbeat every 3 seconds with direct session ID
+        heartbeatInterval.current = setInterval(async () => {
+          console.log('🫀 Heartbeat executing for session:', data.id);
+          try {
+            const heartbeatTime = new Date().toISOString();
+            console.log('📥 Updating heartbeat in database for:', data.id);
+            
+            const { error } = await supabase
+              .from('button_holds')
+              .update({ last_heartbeat: heartbeatTime })
+              .eq('id', data.id);
+              
+            if (error) {
+              console.error('❌ Heartbeat failed:', error);
+            } else {
+              console.log('✅ Heartbeat updated successfully at', heartbeatTime);
+            }
+          } catch (error) {
+            console.error('💥 Heartbeat exception:', error);
+          }
+        }, 3000);
         
         // Immediate refresh of sessions
         await fetchActiveSessions();
