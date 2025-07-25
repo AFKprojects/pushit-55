@@ -59,17 +59,17 @@ export const useSessionManager = () => {
   // Fetch current active sessions using last_heartbeat
   const fetchActiveSessions = useCallback(async () => {
     try {
-      const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
+      const fifteenSecondsAgo = new Date(Date.now() - 15000).toISOString();
       
       const { data, error } = await supabase
         .from('button_holds')
         .select('*')
         .eq('is_active', true)
-        .gt('last_heartbeat', tenSecondsAgo);
+        .gt('last_heartbeat', fifteenSecondsAgo);
       
       if (!error && data) {
         setActiveSessions(data as SessionData[]);
-        console.log('📊 Active sessions fetched:', data.length, 'newer than', tenSecondsAgo);
+        console.log('📊 Active sessions fetched:', data.length, 'newer than', fifteenSecondsAgo);
       } else {
         console.error('Error fetching sessions:', error);
       }
@@ -80,15 +80,15 @@ export const useSessionManager = () => {
 
   // Clean up inactive sessions using last_heartbeat
   const cleanupInactiveSessions = useCallback(async () => {
-    const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
+    const fifteenSecondsAgo = new Date(Date.now() - 15000).toISOString();
     
     try {
-      console.log('🧹 Starting cleanup of sessions with last_heartbeat older than:', tenSecondsAgo);
+      console.log('🧹 Starting cleanup of sessions with last_heartbeat older than:', fifteenSecondsAgo);
       
       const { data: deleted, error } = await supabase
         .from('button_holds')
         .delete()
-        .lt('last_heartbeat', tenSecondsAgo)
+        .lt('last_heartbeat', fifteenSecondsAgo)
         .select('*');
       
       if (error) {
@@ -161,6 +161,9 @@ export const useSessionManager = () => {
         setCurrentSessionId(data.id);
         setIsHolding(true);
         
+        // Send immediate heartbeat to ensure last_heartbeat is fresh
+        await sendHeartbeat();
+        
         // Start heartbeat every 3 seconds
         heartbeatInterval.current = setInterval(sendHeartbeat, 3000);
         
@@ -220,10 +223,13 @@ export const useSessionManager = () => {
 
     console.log('🔧 Initializing session manager for user:', user.id);
 
+    // Force cleanup of old sessions on app start
+    cleanupInactiveSessions();
+
     // Initial fetch
     fetchActiveSessions();
 
-    // Setup cleanup interval (every 5 seconds with 10-second buffer)
+    // Setup cleanup interval (every 5 seconds with 15-second buffer)
     cleanupInterval.current = setInterval(cleanupInactiveSessions, 5000);
 
     // Setup real-time subscription
