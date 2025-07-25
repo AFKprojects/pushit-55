@@ -56,27 +56,16 @@ export const useSessionManager = () => {
   const cleanupInterval = useRef<NodeJS.Timeout | null>(null);
   const deviceId = useRef<string>(getDeviceId());
 
-  // Fetch current active sessions - fallback to started_at if last_heartbeat fails
+  // Fetch current active sessions using last_heartbeat
   const fetchActiveSessions = useCallback(async () => {
     try {
       const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
       
-      // Try with last_heartbeat first, fallback to started_at
-      let { data, error } = await supabase
+      const { data, error } = await supabase
         .from('button_holds')
         .select('*')
         .eq('is_active', true)
-        .gt('last_heartbeat' as any, tenSecondsAgo);
-      
-      // If last_heartbeat doesn't work, use started_at
-      if (error) {
-        console.log('last_heartbeat failed, using started_at fallback');
-        ({ data, error } = await supabase
-          .from('button_holds')
-          .select('*')
-          .eq('is_active', true)
-          .gt('started_at', tenSecondsAgo));
-      }
+        .gt('last_heartbeat', tenSecondsAgo);
       
       if (!error && data) {
         setActiveSessions(data as SessionData[]);
@@ -96,37 +85,16 @@ export const useSessionManager = () => {
     try {
       console.log('🧹 Starting cleanup of sessions with last_heartbeat older than:', tenSecondsAgo);
       
-      // Get sessions before cleanup for logging
-      const { data: beforeCleanup } = await supabase
-        .from('button_holds')
-        .select('*');
-      
-      console.log('🧹 Sessions before cleanup:', beforeCleanup?.length);
-      
-      // Try cleanup with last_heartbeat first, fallback to started_at
-      let { data: deleted, error } = await supabase
+      const { data: deleted, error } = await supabase
         .from('button_holds')
         .delete()
-        .lt('last_heartbeat' as any, tenSecondsAgo)
+        .lt('last_heartbeat', tenSecondsAgo)
         .select('*');
-      
-      // If last_heartbeat doesn't work, use started_at
-      if (error) {
-        console.log('last_heartbeat cleanup failed, using started_at fallback');
-        ({ data: deleted, error } = await supabase
-          .from('button_holds')
-          .delete()
-          .lt('started_at', tenSecondsAgo)
-          .select('*'));
-      }
       
       if (error) {
         console.error('Cleanup error:', error);
       } else {
         console.log('🧹 Cleanup completed - deleted sessions:', deleted?.length || 0);
-        if (deleted?.length) {
-          console.log('🧹 Deleted sessions details:', deleted);
-        }
       }
       
       // Refresh sessions after cleanup
@@ -146,7 +114,7 @@ export const useSessionManager = () => {
       
       const { error } = await supabase
         .from('button_holds')
-        .update({ last_heartbeat: heartbeatTime } as any)
+        .update({ last_heartbeat: heartbeatTime })
         .eq('id', currentSessionId);
       
       if (error) {
@@ -184,7 +152,7 @@ export const useSessionManager = () => {
           started_at: now,
           last_heartbeat: now,
           country: country
-        } as any)
+        })
         .select()
         .single();
 
