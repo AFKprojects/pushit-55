@@ -266,8 +266,14 @@ export const useSessionManager = () => {
         event: '*',
         schema: 'public',
         table: 'button_holds'
-      }, () => {
-        console.log('🔄 Real-time change detected, refreshing sessions');
+      }, (payload: any) => {
+        console.log('🔄 Real-time change detected:', payload.eventType, payload.new?.id);
+        // Don't refresh if it's our own session being updated
+        if (payload.eventType === 'UPDATE' && payload.new?.id === currentSessionId) {
+          console.log('🔄 Skipping refresh - our own session update');
+          return;
+        }
+        console.log('🔄 Refreshing sessions due to external change');
         fetchActiveSessions();
       })
       .subscribe();
