@@ -46,8 +46,14 @@ const getDeviceId = () => {
 
 export const useSessionManager = () => {
   const [activeSessions, setActiveSessions] = useState<SessionData[]>([]);
-  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [currentSessionId, setCurrentSessionIdRaw] = useState<string | null>(null);
   const [isHolding, setIsHolding] = useState(false);
+  
+  // Wrapper to log currentSessionId changes
+  const setCurrentSessionId = (id: string | null) => {
+    console.log('🆔 Setting currentSessionId:', currentSessionId, '->', id, 'Stack:', new Error().stack?.split('\n')[2]);
+    setCurrentSessionIdRaw(id);
+  };
   
   const { user } = useAuth();
   const { country } = useGeolocation();
