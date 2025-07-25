@@ -15,6 +15,19 @@ interface SessionData {
   ended_at?: string;
 }
 
+// Extended interface with all columns that actually exist in DB
+interface DbSessionData {
+  id: string;
+  user_id: string;
+  device_id: string | null;
+  started_at: string | null;
+  last_heartbeat: string | null;
+  country: string | null;
+  is_active: boolean | null;
+  duration_seconds: number | null;
+  ended_at: string | null;
+}
+
 // Generate device fingerprint for session management
 const getDeviceId = () => {
   if (typeof window === 'undefined') return 'server';
@@ -43,16 +56,27 @@ export const useSessionManager = () => {
   const cleanupInterval = useRef<NodeJS.Timeout | null>(null);
   const deviceId = useRef<string>(getDeviceId());
 
-  // Fetch current active sessions using last_heartbeat
+  // Fetch current active sessions - fallback to started_at if last_heartbeat fails
   const fetchActiveSessions = useCallback(async () => {
     try {
       const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
       
-      const { data, error } = await supabase
+      // Try with last_heartbeat first, fallback to started_at
+      let { data, error } = await supabase
         .from('button_holds')
         .select('*')
         .eq('is_active', true)
         .gt('last_heartbeat' as any, tenSecondsAgo);
+      
+      // If last_heartbeat doesn't work, use started_at
+      if (error) {
+        console.log('last_heartbeat failed, using started_at fallback');
+        ({ data, error } = await supabase
+          .from('button_holds')
+          .select('*')
+          .eq('is_active', true)
+          .gt('started_at', tenSecondsAgo));
+      }
       
       if (!error && data) {
         setActiveSessions(data as SessionData[]);
@@ -79,12 +103,22 @@ export const useSessionManager = () => {
       
       console.log('🧹 Sessions before cleanup:', beforeCleanup?.length);
       
-      // Delete sessions with old last_heartbeat
-      const { data: deleted, error } = await supabase
+      // Try cleanup with last_heartbeat first, fallback to started_at
+      let { data: deleted, error } = await supabase
         .from('button_holds')
         .delete()
         .lt('last_heartbeat' as any, tenSecondsAgo)
         .select('*');
+      
+      // If last_heartbeat doesn't work, use started_at
+      if (error) {
+        console.log('last_heartbeat cleanup failed, using started_at fallback');
+        ({ data: deleted, error } = await supabase
+          .from('button_holds')
+          .delete()
+          .lt('started_at', tenSecondsAgo)
+          .select('*'));
+      }
       
       if (error) {
         console.error('Cleanup error:', error);
