@@ -6,7 +6,7 @@ import Polls from '../components/Polls';
 import Create from '../components/Create';
 import MyApp from '../components/MyApp';
 import { useAuth } from '../hooks/useAuth';
-import { useButtonHolds } from '../hooks/useButtonHolds';
+import { useSessionManager } from '../hooks/useSessionManager';
 import { Button } from '@/components/ui/button';
 import { LogIn } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -15,7 +15,7 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState('main');
   const [isButtonActivated, setIsButtonActivated] = useState(false);
   const { user } = useAuth();
-  const { activeHolders, startHold, endHold } = useButtonHolds();
+  const { activeSessionCount, startSession, endSession } = useSessionManager();
   const navigate = useNavigate();
 
   // Ensure consistent dark theme appearance
@@ -28,13 +28,13 @@ const Index = () => {
 
   const handleHoldStart = () => {
     if (user) {
-      startHold();
+      startSession();
     }
   };
 
   const handleHoldEnd = () => {
     if (user) {
-      endHold();
+      endSession();
     }
   };
 
@@ -83,7 +83,7 @@ const Index = () => {
               <HoldButton 
                 onHoldStart={handleHoldStart}
                 onHoldEnd={handleHoldEnd}
-                globalHolders={activeHolders}
+                globalHolders={activeSessionCount}
                 onActivationChange={setIsButtonActivated}
               />
 
@@ -95,10 +95,10 @@ const Index = () => {
                       // Logged in user - show count
                       <>
                         <div className="text-3xl font-bold text-orange-400 mb-2 animate-pulse text-center">
-                          {activeHolders}
+                          {activeSessionCount}
                         </div>
                         <div className="text-orange-200 text-sm text-center">
-                          {activeHolders === 1 ? 'person is holding' : 'people are holding'} together with you
+                          {activeSessionCount === 1 ? 'person is holding' : 'people are holding'} together with you
                         </div>
                       </>
                     ) : (
