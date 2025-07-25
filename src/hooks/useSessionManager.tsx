@@ -206,10 +206,13 @@ export const useSessionManager = () => {
 
   // End current session
   const endSession = useCallback(async () => {
-    if (!currentSessionId) return;
+    if (!currentSessionId) {
+      console.log('🛑 End session called but no current session');
+      return;
+    }
 
     try {
-      console.log('🛑 Ending session:', currentSessionId);
+      console.log('🛑 Ending session:', currentSessionId, 'Caller:', new Error().stack?.split('\n')[2]);
       
       // Stop heartbeat immediately
       if (heartbeatInterval.current) {
