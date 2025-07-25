@@ -106,24 +106,30 @@ export const useSessionManager = () => {
 
   // Send heartbeat for current session - update last_heartbeat to keep it alive
   const sendHeartbeat = useCallback(async () => {
-    if (!currentSessionId) return;
+    if (!currentSessionId) {
+      console.log('🫀 Heartbeat skipped - no current session');
+      return;
+    }
 
     try {
       const heartbeatTime = new Date().toISOString();
-      console.log('💓 Sending heartbeat for session:', currentSessionId, 'at', heartbeatTime);
+      console.log('🫀 Heartbeat starting for session:', currentSessionId, 'at', heartbeatTime);
+      console.log('📥 Updating session heartbeat in database...');
       
-      const { error } = await supabase
+      const { error, data } = await supabase
         .from('button_holds')
         .update({ last_heartbeat: heartbeatTime })
-        .eq('id', currentSessionId);
+        .eq('id', currentSessionId)
+        .select();
       
       if (error) {
-        console.error('💓 Heartbeat failed:', error);
+        console.error('❌ Heartbeat database update failed:', error);
       } else {
-        console.log('✅ Heartbeat sent successfully at', heartbeatTime);
+        console.log('✅ Heartbeat database update successful:', data);
+        console.log('🫀 Session heartbeat updated to:', heartbeatTime);
       }
     } catch (error) {
-      console.error('Error sending heartbeat:', error);
+      console.error('💥 Heartbeat exception:', error);
     }
   }, [currentSessionId]);
 
