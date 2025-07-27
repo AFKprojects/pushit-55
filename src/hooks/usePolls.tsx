@@ -31,7 +31,7 @@ export const usePolls = () => {
   const [polls, setPolls] = useState<Poll[]>([]);
   const [archivedPolls, setArchivedPolls] = useState<Poll[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sortMode, setSortMode] = useState<SortMode>('new');
+  const [sortMode, setSortMode] = useState<SortMode>('hot');
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -153,7 +153,7 @@ export const usePolls = () => {
             // Calculate hot score based on votes and pushes with time decay
             const ageInHours = (Date.now() - new Date(poll.created_at).getTime()) / (1000 * 60 * 60);
             const timeFactor = Math.max(0.1, 1 / (1 + ageInHours * 0.1)); // Decay over time
-            const hotScore = (actualTotalVotes + (poll.push_count || 0) * 2) * timeFactor;
+            const hotScore = (actualTotalVotes + (poll.push_count || 0) * 3) * timeFactor;
 
             return {
               id: poll.id,
@@ -205,20 +205,44 @@ export const usePolls = () => {
     }
 
     try {
-      const { error } = await supabase
+      // Check if user has already voted
+      const { data: existingVote } = await supabase
         .from('user_votes')
-        .insert({
-          poll_id: pollId,
-          option_id: optionId,
-          user_id: user.id
+        .select('id, option_id')
+        .eq('poll_id', pollId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (existingVote) {
+        // Update existing vote (edit vote)
+        const { error } = await supabase
+          .from('user_votes')
+          .update({ option_id: optionId })
+          .eq('id', existingVote.id);
+
+        if (error) throw error;
+
+        toast({
+          title: "Vote Updated",
+          description: "Your vote has been changed!",
         });
+      } else {
+        // Create new vote
+        const { error } = await supabase
+          .from('user_votes')
+          .insert({
+            poll_id: pollId,
+            option_id: optionId,
+            user_id: user.id
+          });
 
-      if (error) throw error;
+        if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Your vote has been recorded!",
-      });
+        toast({
+          title: "Success",
+          description: "Your vote has been recorded!",
+        });
+      }
 
       // Refresh polls to show updated vote counts
       fetchPolls();
@@ -226,9 +250,7 @@ export const usePolls = () => {
       console.error('Error voting:', error);
       toast({
         title: "Error",
-        description: error.message.includes('duplicate key') 
-          ? "You have already voted in this poll" 
-          : "Failed to vote",
+        description: "Failed to vote",
         variant: "destructive",
       });
     }
@@ -344,6 +366,103 @@ export const usePolls = () => {
     };
   }, [user]);
 
+  const searchArchivedPoll = async (pollId: string) => {
+    try {
+      setLoading(true);
+      
+      const { data: pollData, error } = await supabase
+        .from('polls')
+        .select(`
+          id,
+          question,
+          creator_username,
+          status,
+          total_votes,
+          push_count,
+          expires_at,
+          created_at,
+          poll_options (
+            id,
+            option_text,
+            votes
+          )
+        `)
+        .eq('id', pollId)
+        .eq('status', 'archived')
+        .single();
+
+      if (error) {
+        toast({
+          title: "Not Found",
+          description: "No archived poll found with that ID",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!pollData) {
+        toast({
+          title: "Not Found", 
+          description: "No archived poll found with that ID",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Process the single poll result manually (since processPolls is in scope of fetchPolls)
+      const userVote = user ? await supabase
+        .from('user_votes')
+        .select('option_id')
+        .eq('poll_id', pollData.id)
+        .eq('user_id', user.id)
+        .single() : null;
+
+      const actualTotalVotes = pollData.poll_options.reduce((sum: number, opt: any) => sum + opt.votes, 0);
+      
+      const options = pollData.poll_options.map((opt: any) => ({
+        id: opt.id,
+        option_text: opt.option_text,
+        votes: opt.votes,
+        percentage: actualTotalVotes > 0 ? Math.round((opt.votes / actualTotalVotes) * 100) : 0
+      }));
+
+      const ageInHours = (Date.now() - new Date(pollData.created_at).getTime()) / (1000 * 60 * 60);
+      const timeFactor = Math.max(0.1, 1 / (1 + ageInHours * 0.1));
+      const hotScore = (actualTotalVotes + (pollData.push_count || 0) * 3) * timeFactor;
+
+      const processedPoll = {
+        id: pollData.id,
+        question: pollData.question,
+        creator_username: pollData.creator_username,
+        status: pollData.status,
+        total_votes: actualTotalVotes,
+        push_count: pollData.push_count || 0,
+        expires_at: pollData.expires_at,
+        created_at: pollData.created_at,
+        options,
+        timeLeft: calculateTimeLeft(pollData.expires_at),
+        hasVoted: !!userVote?.data,
+        userVote: userVote?.data?.option_id,
+        hotScore
+      };
+
+      setArchivedPolls([processedPoll]);
+      toast({
+        title: "Found",
+        description: "Archived poll found!",
+      });
+    } catch (error) {
+      console.error('Error searching archived poll:', error);
+      toast({
+        title: "Error",
+        description: "Failed to search for poll",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     polls,
     archivedPolls,
@@ -353,6 +472,7 @@ export const usePolls = () => {
     savePoll,
     hidePoll,
     updateSortMode,
+    searchArchivedPoll,
     refetch: fetchPolls
   };
 };

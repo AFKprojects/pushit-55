@@ -3,6 +3,8 @@ import OptionsManager from './OptionsManager';
 import PollDurationInfo from './PollDurationInfo';
 import FormActions from './FormActions';
 import { useCreatePoll } from '@/hooks/useCreatePoll';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 
 const CreatePollForm = () => {
   const {
@@ -12,6 +14,8 @@ const CreatePollForm = () => {
     addOption,
     removeOption,
     updateOption,
+    showCreatorName,
+    setShowCreatorName,
     isSubmitting,
     isValid,
     clearForm,
@@ -42,6 +46,20 @@ const CreatePollForm = () => {
             onRemoveOption={removeOption}
             onUpdateOption={updateOption}
           />
+
+          <div className="bg-black/20 border border-orange-500/20 rounded-xl p-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="show-creator"
+                checked={showCreatorName}
+                onCheckedChange={(checked) => setShowCreatorName(checked === true)}
+                className="border-orange-500/50"
+              />
+              <Label htmlFor="show-creator" className="text-orange-200 text-sm">
+                Show my username as poll creator
+              </Label>
+            </div>
+          </div>
 
           <PollDurationInfo />
 

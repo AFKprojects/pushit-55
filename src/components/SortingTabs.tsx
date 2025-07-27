@@ -11,10 +11,10 @@ interface SortingTabsProps {
 const SortingTabs = ({ sortMode, onSortChange }: SortingTabsProps) => {
   const tabs = [
     {
-      key: 'new' as SortMode,
-      label: 'New',
-      icon: Clock,
-      description: 'Latest polls'
+      key: 'hot' as SortMode,
+      label: 'Hot',
+      icon: Flame,
+      description: 'Trending topics'
     },
     {
       key: 'popular' as SortMode,
@@ -23,10 +23,10 @@ const SortingTabs = ({ sortMode, onSortChange }: SortingTabsProps) => {
       description: 'Most votes'
     },
     {
-      key: 'hot' as SortMode,
-      label: 'Hot',
-      icon: Flame,
-      description: 'Trending topics'
+      key: 'new' as SortMode,
+      label: 'New',
+      icon: Clock,
+      description: 'Latest polls'
     }
   ];
 

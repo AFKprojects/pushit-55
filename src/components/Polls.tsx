@@ -7,13 +7,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PollCard from './PollCard';
 import SortingTabs from './SortingTabs';
 import PushLimitIndicator from './PushLimitIndicator';
+import ArchiveSearch from './ArchiveSearch';
 
 interface PollsProps {
   onNavigateToCreate?: () => void;
 }
 
 const Polls = ({ onNavigateToCreate }: PollsProps) => {
-  const { polls, archivedPolls, loading, sortMode, voteOnPoll, savePoll, hidePoll, updateSortMode } = usePolls();
+  const { polls, archivedPolls, loading, sortMode, voteOnPoll, savePoll, hidePoll, updateSortMode, searchArchivedPoll } = usePolls();
   const { user } = useAuth();
   const { pushLimits, pushPoll, canPushPoll, hasPushedPoll } = usePushSystem();
   const [votingOption, setVotingOption] = useState<{pollId: string, optionIndex: number} | null>(null);
@@ -161,27 +162,31 @@ const Polls = ({ onNavigateToCreate }: PollsProps) => {
                   onClick={onNavigateToCreate}
                   className="bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-xl px-6 py-3 border border-orange-500/30 text-orange-200 font-medium transition-colors"
                 >
-                  Create first poll
+                  Create your poll
                 </button>
               </div>
             )}
 
-            <div className="mt-8 text-center">
-              <button 
-                onClick={onNavigateToCreate}
-                className="bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-xl px-6 py-3 border border-orange-500/30 text-orange-200 font-medium transition-colors"
-              >
-                Create your poll
-              </button>
-            </div>
+            {polls.length > 0 && (
+              <div className="mt-8 text-center">
+                <button 
+                  onClick={onNavigateToCreate}
+                  className="bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-xl px-6 py-3 border border-orange-500/30 text-orange-200 font-medium transition-colors"
+                >
+                  Create your poll
+                </button>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="archive">
+            <ArchiveSearch onSearch={searchArchivedPoll} isLoading={loading} />
+            
             {renderPollsList(archivedPolls, true)}
             
             {archivedPolls.length === 0 && (
               <div className="text-center py-12">
-                <p className="text-orange-300/70">No archived polls</p>
+                <p className="text-orange-300/70">Search for archived polls by ID</p>
               </div>
             )}
           </TabsContent>

@@ -57,7 +57,7 @@ const PollCard = ({
   hasPushedPoll
 }: PollCardProps) => {
   const isExpired = poll.timeLeft === "Ended";
-  const canVote = !poll.hasVoted && user && !isArchive && !isExpired;
+  const canVote = user && !isArchive && !isExpired; // Allow voting even if already voted (to edit)
   const showPushButton = poll.hasVoted && !isArchive && !isExpired;
   const isPushed = hasPushedPoll(poll.id);
   const canPush = canPushPoll(poll.id, poll.hasVoted || false);
@@ -69,6 +69,9 @@ const PollCard = ({
           <h3 className="text-lg font-semibold text-orange-200 mb-2">
             {poll.question}
           </h3>
+          <p className="text-xs text-orange-300/60 mb-1">
+            ID: {poll.id.slice(0, 8)} | by {poll.creator_username}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center text-orange-300/70 text-sm">
@@ -95,14 +98,14 @@ const PollCard = ({
           return (
             <div
               key={option.id}
-              className={`bg-black/20 rounded-lg p-3 ${canVote ? 'cursor-pointer hover:bg-black/40' : 'cursor-default'} transition-colors relative overflow-hidden ${
-                isUserVote ? 'ring-2 ring-orange-400' : ''
-              }`}
-              onMouseDown={() => canVote && onVoteStart(poll.id, index)}
-              onMouseUp={onVoteEnd}
-              onMouseLeave={onVoteEnd}
-              onTouchStart={() => canVote && onVoteStart(poll.id, index)}
-              onTouchEnd={onVoteEnd}
+               className={`bg-black/20 rounded-lg p-3 ${canVote ? 'cursor-pointer hover:bg-black/40' : 'cursor-default'} transition-colors relative overflow-hidden ${
+                 isUserVote ? 'ring-2 ring-orange-400' : ''
+               }`}
+               onMouseDown={() => canVote && onVoteStart(poll.id, index)}
+               onMouseUp={onVoteEnd}
+               onMouseLeave={onVoteEnd}
+               onTouchStart={() => canVote && onVoteStart(poll.id, index)}
+               onTouchEnd={onVoteEnd}
             >
               {isVoting && (
                 <>
@@ -153,6 +156,9 @@ const PollCard = ({
           <div className="flex items-center">
             <TrendingUp size={16} className="mr-1" />
             {poll.hasVoted ? 'Voted' : isArchive ? 'Ended' : 'Active'}
+            {poll.hasVoted && !isArchive && (
+              <span className="ml-2 text-xs text-orange-400/80">(editable)</span>
+            )}
           </div>
         </div>
 

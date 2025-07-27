@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 export const useCreatePoll = () => {
   const [question, setQuestion] = useState('');
   const [options, setOptions] = useState(['', '']);
+  const [showCreatorName, setShowCreatorName] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -33,6 +34,7 @@ export const useCreatePoll = () => {
   const clearForm = () => {
     setQuestion('');
     setOptions(['', '']);
+    setShowCreatorName(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -61,12 +63,9 @@ export const useCreatePoll = () => {
     setIsSubmitting(true);
 
     try {
-      // Get user profile for username
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('id', user.id)
-        .single();
+      // Set expiry to 24 hours from now
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 24);
 
       // Create poll
       const { data: poll, error: pollError } = await supabase
@@ -74,7 +73,11 @@ export const useCreatePoll = () => {
         .insert({
           question: question.trim(),
           created_by: user.id,
-          creator_username: profile?.username || 'User'
+          creator_username: showCreatorName ? (user.email?.split('@')[0] || 'Anonymous') : 'Anonymous',
+          status: 'active',
+          expires_at: expiresAt.toISOString(),
+          total_votes: 0,
+          push_count: 0
         })
         .select()
         .single();
@@ -125,6 +128,8 @@ export const useCreatePoll = () => {
     addOption,
     removeOption,
     updateOption,
+    showCreatorName,
+    setShowCreatorName,
     isSubmitting,
     isValid,
     clearForm,
