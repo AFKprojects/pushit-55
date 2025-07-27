@@ -61,7 +61,7 @@ const PollCard = ({
   isEditingVote = false
 }: PollCardProps) => {
   const isExpired = poll.timeLeft === "Ended";
-  const canVote = user && !isArchive && !isExpired; // Allow voting always if user is logged in and poll is active
+  const canVote = user && !isArchive && !isExpired && (!poll.hasVoted || isEditingVote);
   const showPushButton = poll.hasVoted && !isArchive && !isExpired;
   const isPushed = hasPushedPoll(poll.id);
   const canPush = canPushPoll(poll.id, poll.hasVoted || false);
@@ -96,8 +96,8 @@ const PollCard = ({
 
       <div className="space-y-3 mb-4">
         {poll.options.map((option, index) => {
-          const isVoting = votingOption?.pollId === poll.id && votingOption?.optionIndex === index;
-          const isUserVote = poll.hasVoted && poll.userVote === option.id;
+           const isVoting = votingOption?.pollId === poll.id && votingOption?.optionIndex === index;
+           const isUserVote = poll.hasVoted && poll.userVote === option.id && !isEditingVote;
           
           return (
             <div
@@ -159,7 +159,7 @@ const PollCard = ({
           )}
           <div className="flex items-center">
             <TrendingUp size={16} className="mr-1" />
-            {poll.hasVoted ? 'Voted' : isArchive ? 'Ended' : 'Active'}
+            {isEditingVote ? 'Editing...' : poll.hasVoted ? 'Voted' : isArchive ? 'Ended' : 'Active'}
           </div>
         </div>
 
