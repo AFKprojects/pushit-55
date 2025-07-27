@@ -74,6 +74,7 @@ export const usePolls = () => {
           creator_username,
           status,
           total_votes,
+          push_count,
           expires_at,
           created_at,
           poll_options (
@@ -94,7 +95,7 @@ export const usePolls = () => {
           creator_username,
           status,
           total_votes,
-          
+          push_count,
           expires_at,
           created_at,
           poll_options (
@@ -149,8 +150,10 @@ export const usePolls = () => {
               percentage: actualTotalVotes > 0 ? Math.round((opt.votes / actualTotalVotes) * 100) : 0
             }));
 
-            // For now, use just vote count for hot score since push_count doesn't exist yet
-            const hotScore = actualTotalVotes;
+            // Calculate hot score based on votes and pushes with time decay
+            const ageInHours = (Date.now() - new Date(poll.created_at).getTime()) / (1000 * 60 * 60);
+            const timeFactor = Math.max(0.1, 1 / (1 + ageInHours * 0.1)); // Decay over time
+            const hotScore = (actualTotalVotes + (poll.push_count || 0) * 2) * timeFactor;
 
             return {
               id: poll.id,
@@ -158,7 +161,7 @@ export const usePolls = () => {
               creator_username: poll.creator_username,
               status: poll.status,
               total_votes: actualTotalVotes, // Use calculated total instead of stored value
-              push_count: 0, // Temporary until backend is updated
+              push_count: poll.push_count || 0,
               expires_at: poll.expires_at,
               created_at: poll.created_at,
               options,

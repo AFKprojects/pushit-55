@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface PushLimits {
   pushCount: number;
@@ -9,8 +10,9 @@ export interface PushLimits {
   canPush: boolean;
 }
 
-const PUSH_STORAGE_KEY = 'poll_pushes';
-const PUSH_LIMITS_KEY = 'push_limits';
+// Tables needed for push system:
+// user_push_limits: user_id (uuid), push_count (int), push_date (date)
+// poll_pushes: user_id (uuid), poll_id (uuid), pushed_at (timestamp)
 
 export const usePushSystem = () => {
   const [pushLimits, setPushLimits] = useState<PushLimits>({
@@ -28,25 +30,24 @@ export const usePushSystem = () => {
     return new Date().toISOString().split('T')[0];
   };
 
-  // Load data from localStorage
-  const loadPushData = () => {
+  // Load data from database (fallback to localStorage for now)
+  const loadPushData = async () => {
     if (!user) return;
 
     try {
       const currentDate = getCurrentDateString();
       
-      // Load push limits
-      const storedLimits = localStorage.getItem(`${PUSH_LIMITS_KEY}_${user.id}`);
+      // For now, use localStorage since the database tables may not exist yet
+      // TODO: Replace with database queries when tables are created
+      const storedLimits = localStorage.getItem(`push_limits_${user.id}`);
       let pushCount = 0;
       
       if (storedLimits) {
         const limits = JSON.parse(storedLimits);
-        // Reset if it's a new day
         if (limits.date === currentDate) {
           pushCount = limits.count || 0;
         } else {
-          // New day, reset to 0
-          localStorage.setItem(`${PUSH_LIMITS_KEY}_${user.id}`, JSON.stringify({
+          localStorage.setItem(`push_limits_${user.id}`, JSON.stringify({
             count: 0,
             date: currentDate
           }));
@@ -64,14 +65,13 @@ export const usePushSystem = () => {
       });
 
       // Load pushed polls for today
-      const storedPushes = localStorage.getItem(`${PUSH_STORAGE_KEY}_${user.id}`);
+      const storedPushes = localStorage.getItem(`poll_pushes_${user.id}`);
       if (storedPushes) {
         const pushData = JSON.parse(storedPushes);
         if (pushData.date === currentDate) {
           setPushedPolls(new Set(pushData.polls || []));
         } else {
-          // New day, clear pushed polls
-          localStorage.setItem(`${PUSH_STORAGE_KEY}_${user.id}`, JSON.stringify({
+          localStorage.setItem(`poll_pushes_${user.id}`, JSON.stringify({
             polls: [],
             date: currentDate
           }));
@@ -114,17 +114,36 @@ export const usePushSystem = () => {
 
     try {
       const currentDate = getCurrentDateString();
-      const newPushCount = pushLimits.pushCount + 1;
-      const newRemainingPushes = Math.max(0, pushLimits.maxPushes - newPushCount);
+      const newUserPushCount = pushLimits.pushCount + 1;
+      const newRemainingPushes = Math.max(0, pushLimits.maxPushes - newUserPushCount);
       
-      // Update localStorage
-      localStorage.setItem(`${PUSH_LIMITS_KEY}_${user.id}`, JSON.stringify({
-        count: newPushCount,
+      // First get current push_count, then increment it
+      const { data: currentPoll, error: fetchError } = await supabase
+        .from('polls')
+        .select('push_count')
+        .eq('id', pollId)
+        .single();
+
+      if (!fetchError && currentPoll) {
+        const newPollPushCount = (currentPoll.push_count || 0) + 1;
+        const { error: updateError } = await supabase
+          .from('polls')
+          .update({ push_count: newPollPushCount })
+          .eq('id', pollId);
+
+        if (updateError) {
+          console.error('Error updating poll push count:', updateError);
+        }
+      }
+
+      // Update localStorage (fallback for user limits tracking)
+      localStorage.setItem(`push_limits_${user.id}`, JSON.stringify({
+        count: newUserPushCount,
         date: currentDate
       }));
 
       const newPushedPolls = new Set([...pushedPolls, pollId]);
-      localStorage.setItem(`${PUSH_STORAGE_KEY}_${user.id}`, JSON.stringify({
+      localStorage.setItem(`poll_pushes_${user.id}`, JSON.stringify({
         polls: Array.from(newPushedPolls),
         date: currentDate
       }));
@@ -132,7 +151,7 @@ export const usePushSystem = () => {
       // Update local state
       setPushLimits({
         ...pushLimits,
-        pushCount: newPushCount,
+        pushCount: newUserPushCount,
         remainingPushes: newRemainingPushes,
         canPush: newRemainingPushes > 0
       });
