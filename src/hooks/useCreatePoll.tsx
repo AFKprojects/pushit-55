@@ -54,10 +54,19 @@ export const useCreatePoll = () => {
     }
 
     const validOptions = options.filter(o => o.trim());
+    if (!question.trim()) {
+      toast({
+        title: "Error",
+        description: "Please provide a question for your poll",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (validOptions.length < 2) {
       toast({
         title: "Error",
-        description: "You must provide at least 2 answer options",
+        description: "You must provide at least 2 non-empty answer options",
         variant: "destructive",
       });
       return;

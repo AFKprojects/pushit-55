@@ -57,7 +57,7 @@ const PollCard = ({
   hasPushedPoll
 }: PollCardProps) => {
   const isExpired = poll.timeLeft === "Ended";
-  const canVote = user && !isArchive && !isExpired; // Allow voting even if already voted (to edit)
+  const canVote = user && !isArchive && !isExpired; // Allow voting always if user is logged in and poll is active
   const showPushButton = poll.hasVoted && !isArchive && !isExpired;
   const isPushed = hasPushedPoll(poll.id);
   const canPush = canPushPoll(poll.id, poll.hasVoted || false);

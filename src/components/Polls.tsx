@@ -33,8 +33,18 @@ const Polls = ({ onNavigateToCreate }: PollsProps) => {
   const handleVoteStart = (pollId: string, optionIndex: number) => {
     if (votingOption || !user) return;
     
-    const poll = polls.find(p => p.id === pollId);
-    if (poll?.hasVoted) return;
+    // For edit vote button, optionIndex is -1, allow user to select any option
+    if (optionIndex === -1) {
+      // This is an edit vote action
+      const poll = polls.find(p => p.id === pollId);
+      if (!poll?.hasVoted) return; // Only allow edit if they already voted
+      // Don't set a specific option, let user click on the option they want
+      return;
+    } else {
+      // This is a regular vote on a specific option
+      const poll = polls.find(p => p.id === pollId);
+      if (!poll) return;
+    }
     
     setVotingOption({ pollId, optionIndex });
     setVotingProgress(0);
