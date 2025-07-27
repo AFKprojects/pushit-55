@@ -20,6 +20,8 @@ const Polls = ({ onNavigateToCreate }: PollsProps) => {
   const [votingOption, setVotingOption] = useState<{pollId: string, optionIndex: number} | null>(null);
   const [votingProgress, setVotingProgress] = useState(0);
   const [countdownSeconds, setCountdownSeconds] = useState(0);
+  const [editingPolls, setEditingPolls] = useState<Set<string>>(new Set());
+  const [editedPolls, setEditedPolls] = useState<Set<string>>(new Set());
   const votingTimer = useState<NodeJS.Timeout | null>(null)[0];
 
   if (loading) {
@@ -33,18 +35,22 @@ const Polls = ({ onNavigateToCreate }: PollsProps) => {
   const handleVoteStart = (pollId: string, optionIndex: number) => {
     if (votingOption || !user) return;
     
-    // For edit vote button, optionIndex is -1, allow user to select any option
+    // For edit vote button, optionIndex is -1
     if (optionIndex === -1) {
-      // This is an edit vote action
       const poll = polls.find(p => p.id === pollId);
-      if (!poll?.hasVoted) return; // Only allow edit if they already voted
-      // Don't set a specific option, let user click on the option they want
+      if (!poll?.hasVoted || editedPolls.has(pollId)) return;
+      
+      // Enter editing mode - reset poll to non-voted state visually
+      setEditingPolls(prev => new Set([...prev, pollId]));
       return;
-    } else {
-      // This is a regular vote on a specific option
-      const poll = polls.find(p => p.id === pollId);
-      if (!poll) return;
     }
+    
+    // Regular vote on a specific option
+    const poll = polls.find(p => p.id === pollId);
+    if (!poll) return;
+    
+    // If poll is not in editing mode and user already voted, don't allow voting
+    if (poll.hasVoted && !editingPolls.has(pollId)) return;
     
     setVotingOption({ pollId, optionIndex });
     setVotingProgress(0);
@@ -85,6 +91,16 @@ const Polls = ({ onNavigateToCreate }: PollsProps) => {
     const poll = polls.find(p => p.id === pollId);
     if (poll && poll.options[optionIndex]) {
       await voteOnPoll(pollId, poll.options[optionIndex].id);
+      
+      // If this was an edit, mark as edited
+      if (editingPolls.has(pollId)) {
+        setEditedPolls(prev => new Set([...prev, pollId]));
+        setEditingPolls(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(pollId);
+          return newSet;
+        });
+      }
     }
     handleVoteEnd();
   };
@@ -105,24 +121,35 @@ const Polls = ({ onNavigateToCreate }: PollsProps) => {
 
   const renderPollsList = (pollsList: typeof polls, isArchive = false) => (
     <div className="space-y-6">
-      {pollsList.map((poll) => (
-        <PollCard
-          key={poll.id}
-          poll={poll}
-          user={user}
-          isArchive={isArchive}
-          votingOption={votingOption}
-          votingProgress={votingProgress}
-          countdownSeconds={countdownSeconds}
-          onVoteStart={handleVoteStart}
-          onVoteEnd={handleVoteEnd}
-          onSavePoll={handleSavePoll}
-          onHidePoll={handleHidePoll}
-          onPushPoll={handlePushPoll}
-          canPushPoll={canPushPoll}
-          hasPushedPoll={hasPushedPoll}
-        />
-      ))}
+      {pollsList.map((poll) => {
+        const isInEditMode = editingPolls.has(poll.id);
+        const hasBeenEdited = editedPolls.has(poll.id);
+        
+        return (
+          <PollCard
+            key={poll.id}
+            poll={{
+              ...poll,
+              hasVoted: poll.hasVoted && !isInEditMode,
+              userVote: isInEditMode ? undefined : poll.userVote
+            }}
+            user={user}
+            isArchive={isArchive}
+            votingOption={votingOption}
+            votingProgress={votingProgress}
+            countdownSeconds={countdownSeconds}
+            onVoteStart={handleVoteStart}
+            onVoteEnd={handleVoteEnd}
+            onSavePoll={handleSavePoll}
+            onHidePoll={handleHidePoll}
+            onPushPoll={handlePushPoll}
+            canPushPoll={canPushPoll}
+            hasPushedPoll={hasPushedPoll}
+            canEditVote={poll.hasVoted && !hasBeenEdited && !isArchive}
+            isEditingVote={isInEditMode}
+          />
+        );
+      })}
     </div>
   );
 

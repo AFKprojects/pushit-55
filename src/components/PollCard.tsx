@@ -39,6 +39,8 @@ interface PollCardProps {
   onPushPoll: (pollId: string) => void;
   canPushPoll: (pollId: string, hasVoted: boolean) => boolean;
   hasPushedPoll: (pollId: string) => boolean;
+  canEditVote?: boolean;
+  isEditingVote?: boolean;
 }
 
 const PollCard = ({ 
@@ -54,7 +56,9 @@ const PollCard = ({
   onHidePoll,
   onPushPoll,
   canPushPoll,
-  hasPushedPoll
+  hasPushedPoll,
+  canEditVote = false,
+  isEditingVote = false
 }: PollCardProps) => {
   const isExpired = poll.timeLeft === "Ended";
   const canVote = user && !isArchive && !isExpired; // Allow voting always if user is logged in and poll is active
@@ -161,7 +165,7 @@ const PollCard = ({
 
         {user && !isArchive && (
           <div className="flex gap-2">
-            {poll.hasVoted && !isExpired && (
+            {canEditVote && (
               <Button
                 size="sm"
                 variant="outline"
@@ -170,6 +174,11 @@ const PollCard = ({
               >
                 Edit Vote
               </Button>
+            )}
+            {isEditingVote && (
+              <div className="text-orange-400/80 text-xs flex items-center">
+                Select new option (1 edit allowed)
+              </div>
             )}
             {showPushButton && (
               <Button
