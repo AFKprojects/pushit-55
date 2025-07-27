@@ -6,13 +6,15 @@ interface OptionsManagerProps {
   onAddOption: () => void;
   onRemoveOption: (index: number) => void;
   onUpdateOption: (index: number, value: string) => void;
+  hasAttemptedSubmit?: boolean;
 }
 
 const OptionsManager = ({ 
   options, 
   onAddOption, 
   onRemoveOption, 
-  onUpdateOption 
+  onUpdateOption,
+  hasAttemptedSubmit = false
 }: OptionsManagerProps) => {
   return (
     <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-6 border border-orange-500/30">
@@ -54,10 +56,10 @@ const OptionsManager = ({
                 onChange={(e) => onUpdateOption(index, e.target.value)}
                 placeholder={`Option ${index + 1}`}
                 className={`w-full bg-black/20 border rounded-lg px-4 py-3 text-orange-200 placeholder:text-orange-300/60 focus:outline-none focus:ring-2 focus:ring-orange-400 ${
-                  option.trim() === '' ? 'border-red-500/50' : 'border-orange-500/20'
+                  hasAttemptedSubmit && option.trim() === '' ? 'border-red-500/50' : 'border-orange-500/20'
                 }`}
               />
-              {option.trim() === '' && (
+              {hasAttemptedSubmit && option.trim() === '' && (
                 <p className="text-red-300/80 text-xs mt-1">This option cannot be empty</p>
               )}
             </div>

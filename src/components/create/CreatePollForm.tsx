@@ -18,6 +18,7 @@ const CreatePollForm = () => {
     setShowCreatorName,
     isSubmitting,
     isValid,
+    hasAttemptedSubmit,
     clearForm,
     handleSubmit
   } = useCreatePoll();
@@ -45,6 +46,7 @@ const CreatePollForm = () => {
             onAddOption={addOption}
             onRemoveOption={removeOption}
             onUpdateOption={updateOption}
+            hasAttemptedSubmit={hasAttemptedSubmit}
           />
 
           <div className="bg-black/20 border border-orange-500/20 rounded-xl p-4">

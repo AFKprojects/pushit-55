@@ -9,6 +9,7 @@ export const useCreatePoll = () => {
   const [options, setOptions] = useState(['', '']);
   const [showCreatorName, setShowCreatorName] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -35,10 +36,12 @@ export const useCreatePoll = () => {
     setQuestion('');
     setOptions(['', '']);
     setShowCreatorName(true);
+    setHasAttemptedSubmit(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setHasAttemptedSubmit(true);
     
     if (!user) {
       toast({
@@ -132,6 +135,7 @@ export const useCreatePoll = () => {
     setShowCreatorName,
     isSubmitting,
     isValid,
+    hasAttemptedSubmit,
     clearForm,
     handleSubmit,
     user
