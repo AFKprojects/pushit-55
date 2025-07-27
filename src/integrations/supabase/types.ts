@@ -113,6 +113,7 @@ export type Database = {
           creator_username: string
           expires_at: string | null
           id: string
+          push_count: number | null
           question: string
           status: Database["public"]["Enums"]["poll_status"] | null
           total_votes: number | null
@@ -124,6 +125,7 @@ export type Database = {
           creator_username: string
           expires_at?: string | null
           id?: string
+          push_count?: number | null
           question: string
           status?: Database["public"]["Enums"]["poll_status"] | null
           total_votes?: number | null
@@ -135,6 +137,7 @@ export type Database = {
           creator_username?: string
           expires_at?: string | null
           id?: string
+          push_count?: number | null
           question?: string
           status?: Database["public"]["Enums"]["poll_status"] | null
           total_votes?: number | null
