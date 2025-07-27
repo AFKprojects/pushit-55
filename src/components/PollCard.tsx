@@ -98,8 +98,6 @@ const PollCard = ({
         {poll.options.map((option, index) => {
            const isVoting = votingOption?.pollId === poll.id && votingOption?.optionIndex === index;
            const isUserVote = poll.hasVoted && poll.userVote === option.id && !isEditingVote;
-           
-           console.log('Option render:', { optionId: option.id, isUserVote, hasVoted: poll.hasVoted, userVote: poll.userVote, isEditingVote });
           
           return (
             <div
