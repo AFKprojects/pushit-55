@@ -125,6 +125,15 @@ const Polls = ({ onNavigateToCreate }: PollsProps) => {
         const isInEditMode = editingPolls.has(poll.id);
         const hasBeenEdited = editedPolls.has(poll.id);
         
+        console.log('Poll render debug:', { 
+          id: poll.id.slice(0,8), 
+          originalHasVoted: poll.hasVoted, 
+          isInEditMode, 
+          hasBeenEdited,
+          passedHasVoted: isInEditMode ? false : poll.hasVoted,
+          canEditVote: poll.hasVoted && !hasBeenEdited && !isArchive
+        });
+        
         return (
           <PollCard
             key={poll.id}
