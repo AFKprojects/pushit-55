@@ -10,6 +10,7 @@ interface Poll {
   creator_username: string;
   status: 'active' | 'archived';
   total_votes: number;
+  push_count: number;
   expires_at: string;
   created_at: string;
   options: Array<{
@@ -21,12 +22,16 @@ interface Poll {
   timeLeft: string;
   hasVoted?: boolean;
   userVote?: string;
+  hotScore?: number;
 }
+
+type SortMode = 'new' | 'popular' | 'hot';
 
 export const usePolls = () => {
   const [polls, setPolls] = useState<Poll[]>([]);
   const [archivedPolls, setArchivedPolls] = useState<Poll[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sortMode, setSortMode] = useState<SortMode>('new');
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -89,6 +94,7 @@ export const usePolls = () => {
           creator_username,
           status,
           total_votes,
+          
           expires_at,
           created_at,
           poll_options (
@@ -143,18 +149,23 @@ export const usePolls = () => {
               percentage: actualTotalVotes > 0 ? Math.round((opt.votes / actualTotalVotes) * 100) : 0
             }));
 
+            // For now, use just vote count for hot score since push_count doesn't exist yet
+            const hotScore = actualTotalVotes;
+
             return {
               id: poll.id,
               question: poll.question,
               creator_username: poll.creator_username,
               status: poll.status,
               total_votes: actualTotalVotes, // Use calculated total instead of stored value
+              push_count: 0, // Temporary until backend is updated
               expires_at: poll.expires_at,
               created_at: poll.created_at,
               options,
               timeLeft: calculateTimeLeft(poll.expires_at),
               hasVoted: !!userVote,
-              userVote: userVote?.option_id
+              userVote: userVote?.option_id,
+              hotScore
             };
           }) || [];
       };
@@ -163,7 +174,10 @@ export const usePolls = () => {
       const processedPolls = processPolls(pollsData || []);
       const processedArchivedPolls = processPolls(archivedData || []);
 
-      setPolls(processedPolls);
+      // Sort polls based on current sort mode
+      const sortedPolls = sortPolls(processedPolls, sortMode);
+
+      setPolls(sortedPolls);
       setArchivedPolls(processedArchivedPolls);
     } catch (error) {
       console.error('Error fetching polls:', error);
@@ -278,6 +292,28 @@ export const usePolls = () => {
     }
   };
 
+  // Sort polls based on mode
+  const sortPolls = (pollsToSort: Poll[], mode: SortMode): Poll[] => {
+    const sorted = [...pollsToSort];
+    
+    switch (mode) {
+      case 'new':
+        return sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      case 'popular':
+        return sorted.sort((a, b) => b.total_votes - a.total_votes);
+      case 'hot':
+        return sorted.sort((a, b) => (b.hotScore || 0) - (a.hotScore || 0));
+      default:
+        return sorted;
+    }
+  };
+
+  // Update sort mode and re-sort polls
+  const updateSortMode = (mode: SortMode) => {
+    setSortMode(mode);
+    setPolls(prev => sortPolls(prev, mode));
+  };
+
   useEffect(() => {
     fetchPolls();
 
@@ -309,9 +345,11 @@ export const usePolls = () => {
     polls,
     archivedPolls,
     loading,
+    sortMode,
     voteOnPoll,
     savePoll,
     hidePoll,
+    updateSortMode,
     refetch: fetchPolls
   };
 };
