@@ -40,6 +40,7 @@ const Polls = ({ onNavigateToCreate }: PollsProps) => {
       const poll = polls.find(p => p.id === pollId);
       if (!poll?.hasVoted || editedPolls.has(pollId)) return;
       
+      console.log('Starting edit mode for poll:', pollId);
       // Enter editing mode - reset poll to non-voted state visually
       setEditingPolls(prev => new Set([...prev, pollId]));
       return;
@@ -48,6 +49,8 @@ const Polls = ({ onNavigateToCreate }: PollsProps) => {
     // Regular vote on a specific option
     const poll = polls.find(p => p.id === pollId);
     if (!poll) return;
+    
+    console.log('Vote start:', { pollId, optionIndex, hasVoted: poll.hasVoted, isEditing: editingPolls.has(pollId) });
     
     // If poll is not in editing mode and user already voted, don't allow voting
     if (poll.hasVoted && !editingPolls.has(pollId)) return;
@@ -124,6 +127,8 @@ const Polls = ({ onNavigateToCreate }: PollsProps) => {
       {pollsList.map((poll) => {
         const isInEditMode = editingPolls.has(poll.id);
         const hasBeenEdited = editedPolls.has(poll.id);
+        
+        console.log('Rendering poll:', { id: poll.id, hasVoted: poll.hasVoted, isInEditMode, hasBeenEdited });
         
         return (
           <PollCard
