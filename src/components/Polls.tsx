@@ -38,8 +38,10 @@ const Polls = ({ onNavigateToCreate }: PollsProps) => {
     // For edit vote button, optionIndex is -1
     if (optionIndex === -1) {
       const poll = polls.find(p => p.id === pollId);
+      console.log('Edit vote clicked:', { pollId, hasVoted: poll?.hasVoted, alreadyEdited: editedPolls.has(pollId) });
       if (!poll?.hasVoted || editedPolls.has(pollId)) return;
       
+      console.log('ENTERING EDIT MODE for poll:', pollId);
       // Enter editing mode - reset poll to non-voted state visually
       setEditingPolls(prev => new Set([...prev, pollId]));
       return;
