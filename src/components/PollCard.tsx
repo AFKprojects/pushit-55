@@ -156,14 +156,21 @@ const PollCard = ({
           <div className="flex items-center">
             <TrendingUp size={16} className="mr-1" />
             {poll.hasVoted ? 'Voted' : isArchive ? 'Ended' : 'Active'}
-            {poll.hasVoted && !isArchive && (
-              <span className="ml-2 text-xs text-orange-400/80">(editable)</span>
-            )}
           </div>
         </div>
 
         {user && !isArchive && (
           <div className="flex gap-2">
+            {poll.hasVoted && !isExpired && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onVoteStart(poll.id, -1)}
+                className="border-orange-500/30 text-orange-300 hover:bg-orange-500/10"
+              >
+                Edit Vote
+              </Button>
+            )}
             {showPushButton && (
               <Button
                 size="sm"

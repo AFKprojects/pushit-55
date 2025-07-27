@@ -1,4 +1,4 @@
-import { Plus, X } from 'lucide-react';
+import { Plus, Minus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface OptionsManagerProps {
@@ -20,17 +20,28 @@ const OptionsManager = ({
         <label className="block text-orange-200 font-medium">
           Answer Options (2-5 options)
         </label>
-        <Button
-          type="button"
-          onClick={onAddOption}
-          disabled={options.length >= 5}
-          size="sm"
-          className="bg-black/20 hover:bg-black/40 text-orange-200 border-orange-500/20"
-          variant="outline"
-        >
-          <Plus size={16} className="mr-1" />
-          Add Option
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            onClick={() => options.length > 2 && onRemoveOption(options.length - 1)}
+            disabled={options.length <= 2}
+            size="sm"
+            className="bg-red-500/20 hover:bg-red-500/30 text-red-200 border-red-400/20"
+            variant="outline"
+          >
+            <Minus size={16} />
+          </Button>
+          <Button
+            type="button"
+            onClick={onAddOption}
+            disabled={options.length >= 5}
+            size="sm"
+            className="bg-green-500/20 hover:bg-green-500/30 text-green-200 border-green-400/20"
+            variant="outline"
+          >
+            <Plus size={16} />
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-3">
@@ -42,20 +53,14 @@ const OptionsManager = ({
                 value={option}
                 onChange={(e) => onUpdateOption(index, e.target.value)}
                 placeholder={`Option ${index + 1}`}
-                className="w-full bg-black/20 border border-orange-500/20 rounded-lg px-4 py-3 text-orange-200 placeholder:text-orange-300/60 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                className={`w-full bg-black/20 border rounded-lg px-4 py-3 text-orange-200 placeholder:text-orange-300/60 focus:outline-none focus:ring-2 focus:ring-orange-400 ${
+                  option.trim() === '' ? 'border-red-500/50' : 'border-orange-500/20'
+                }`}
               />
+              {option.trim() === '' && (
+                <p className="text-red-300/80 text-xs mt-1">This option cannot be empty</p>
+              )}
             </div>
-            {options.length > 2 && (
-              <Button
-                type="button"
-                onClick={() => onRemoveOption(index)}
-                size="sm"
-                className="bg-red-500/20 hover:bg-red-500/30 text-red-200 border-red-400/20"
-                variant="outline"
-              >
-                <X size={16} />
-              </Button>
-            )}
           </div>
         ))}
       </div>
