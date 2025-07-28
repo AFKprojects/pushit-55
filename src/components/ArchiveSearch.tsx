@@ -2,18 +2,25 @@ import { useState } from 'react';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
 interface ArchiveSearchProps {
-  onSearch: (pollId: string) => void;
-  isLoading: boolean;
+  onSearch?: (pollId: string) => void;
+  isLoading?: boolean;
 }
 
-const ArchiveSearch = ({ onSearch, isLoading }: ArchiveSearchProps) => {
+const ArchiveSearch = ({ onSearch, isLoading = false }: ArchiveSearchProps) => {
   const [searchId, setSearchId] = useState('');
+  const navigate = useNavigate();
 
   const handleSearch = () => {
     if (searchId.trim()) {
-      onSearch(searchId.trim());
+      if (onSearch) {
+        onSearch(searchId.trim());
+      } else {
+        // Navigate to poll view
+        navigate(`/poll/${searchId.trim()}`);
+      }
     }
   };
 
@@ -25,9 +32,10 @@ const ArchiveSearch = ({ onSearch, isLoading }: ArchiveSearchProps) => {
 
   return (
     <div className="bg-black/20 border border-orange-500/20 rounded-xl p-4 mb-6">
+      <h3 className="text-orange-200 font-medium mb-3">🔎 Search Poll by ID</h3>
       <div className="flex gap-2">
         <Input
-          placeholder="Search by poll ID..."
+          placeholder="Enter poll ID..."
           value={searchId}
           onChange={(e) => setSearchId(e.target.value)}
           onKeyPress={handleKeyPress}
