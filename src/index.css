@@ -38,6 +38,17 @@ All colors MUST be HSL.
 
     --radius: 0.5rem;
 
+    /* App-specific design tokens */
+    --app-primary: 25 95% 53%;        /* Orange primary */
+    --app-primary-light: 45 100% 60%; /* Yellow accent */
+    --app-secondary: 25 85% 45%;      /* Darker orange */
+    --app-bg-card: 0 0% 0%;           /* Black card background */
+    --app-bg-overlay: 0 0% 0%;        /* Black overlay with opacity */
+    --app-border: 25 95% 53%;         /* Orange borders */
+    --app-text-primary: 25 85% 75%;   /* Light orange text */
+    --app-text-secondary: 25 65% 60%; /* Medium orange text */
+    --app-text-muted: 25 45% 50%;     /* Muted orange text */
+
     --sidebar-background: 0 0% 98%;
 
     --sidebar-foreground: 240 5.3% 26.1%;

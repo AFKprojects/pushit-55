@@ -407,9 +407,9 @@ const PollModal = () => {
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-black/40 backdrop-blur-sm rounded-2xl border border-orange-500/30 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-black/90 backdrop-blur-sm rounded-2xl border border-orange-500/40 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl shadow-orange-500/20">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-orange-500/20">
+        <div className="flex items-center justify-between p-6 border-b border-orange-500/30">
           <h2 className="text-xl font-bold text-orange-200">Poll Details</h2>
           <Button
             variant="ghost"
@@ -422,7 +422,7 @@ const PollModal = () => {
         </div>
 
         {/* Content */}
-        <div className="p-6">
+        <div className="p-6 bg-gradient-to-br from-black via-gray-900/50 to-blue-900/30">
           {loading ? (
             <div className="text-center text-orange-300 py-8">Loading poll...</div>
           ) : poll ? (
@@ -463,9 +463,9 @@ const PollModal = () => {
                   return (
                     <div
                       key={option.id}
-                      className={`bg-black/20 rounded-lg p-4 relative overflow-hidden transition-colors ${
-                        canVote ? 'cursor-pointer hover:bg-black/40' : 'cursor-default'
-                      } ${isUserVote ? 'ring-2 ring-orange-400' : ''}`}
+                      className={`bg-black/30 rounded-lg p-4 relative overflow-hidden transition-all duration-200 ${
+                        canVote ? 'cursor-pointer hover:bg-black/50 hover:border-orange-400/50' : 'cursor-default'
+                      } ${isUserVote ? 'ring-2 ring-orange-400 bg-orange-900/20' : ''} border border-orange-500/20`}
                       onMouseDown={() => canVote && handleVoteStart(option.id)}
                       onMouseUp={handleVoteEnd}
                       onMouseLeave={handleVoteEnd}
@@ -499,9 +499,9 @@ const PollModal = () => {
                         </div>
                         
                         {(poll.hasVoted || !poll.is_active) && (
-                          <div className="bg-black/40 rounded-full h-2">
+                          <div className="bg-black/60 rounded-full h-2 border border-orange-500/20">
                             <div
-                              className="bg-gradient-to-r from-orange-400 to-yellow-500 h-2 rounded-full transition-all duration-300"
+                              className="bg-gradient-to-r from-orange-400 via-orange-500 to-yellow-500 h-2 rounded-full transition-all duration-500 shadow-sm shadow-orange-500/30"
                               style={{ width: `${option.percentage}%` }}
                             />
                           </div>
@@ -572,7 +572,7 @@ const PollModal = () => {
               </div>
 
               {/* Share Button */}
-              <div className="flex justify-center pt-4 border-t border-orange-500/20">
+              <div className="flex justify-center pt-6 border-t border-orange-500/30">
                 <Button
                   variant="outline"
                   onClick={handleShare}
