@@ -45,17 +45,45 @@ export const usePushSystem = () => {
     }
 
     try {
-      // Temporarily disable database queries until types are updated
-      console.log('Push system temporarily disabled - waiting for type regeneration');
-      
-      // Use local state only for now
+      const currentDate = getCurrentDateString();
+
+      // Get current daily push limits
+      const { data: dailyLimits, error: limitsError } = await supabase
+        .from('daily_push_limits')
+        .select('push_count, max_pushes')
+        .eq('user_id', user.id)
+        .eq('push_date', currentDate)
+        .single();
+
+      if (limitsError && limitsError.code !== 'PGRST116') {
+        console.error('Error fetching daily limits:', limitsError);
+        throw limitsError;
+      }
+
+      // Get user's pushed polls for today
+      const { data: userPushes, error: pushesError } = await supabase
+        .from('user_pushes')
+        .select('poll_id')
+        .eq('user_id', user.id)
+        .gte('pushed_at', currentDate + 'T00:00:00');
+
+      if (pushesError) {
+        console.error('Error fetching user pushes:', pushesError);
+        throw pushesError;
+      }
+
+      const currentPushCount = dailyLimits?.push_count || 0;
+      const maxPushes = dailyLimits?.max_pushes || 3;
+      const pushedPollIds = userPushes?.map(p => p.poll_id) || [];
+
       setPushLimits({
-        pushCount: 0,
-        maxPushes: 3,
-        remainingPushes: 3,
-        canPush: true
+        pushCount: currentPushCount,
+        maxPushes,
+        remainingPushes: maxPushes - currentPushCount,
+        canPush: currentPushCount < maxPushes
       });
-      setPushedPolls([]);
+      
+      setPushedPolls(pushedPollIds);
     } catch (error) {
       console.error('Error loading push data:', error);
       // Fallback to defaults
@@ -99,16 +127,81 @@ export const usePushSystem = () => {
     }
 
     try {
-      // Temporarily disable database operations until types are updated
-      console.log('Push functionality temporarily disabled - waiting for type regeneration');
-      
-      // Simulate local push for now
-      if (pushedPolls.includes(pollId)) {
+      const currentDate = getCurrentDateString();
+
+      // Check if user already pushed this poll
+      const { data: existingPush, error: checkError } = await supabase
+        .from('user_pushes')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('poll_id', pollId)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('Error checking existing push:', checkError);
+        throw checkError;
+      }
+
+      if (existingPush) {
         console.log('Poll already pushed by this user');
         return false;
       }
 
-      // Update local state only
+      // Insert the push record
+      const { error: pushError } = await supabase
+        .from('user_pushes')
+        .insert({
+          user_id: user.id,
+          poll_id: pollId,
+          pushed_at: new Date().toISOString()
+        });
+
+      if (pushError) {
+        console.error('Error inserting push:', pushError);
+        throw pushError;
+      }
+
+      // Update or create daily push limits
+      const { data: dailyLimits, error: upsertError } = await supabase
+        .from('daily_push_limits')
+        .upsert({
+          user_id: user.id,
+          push_date: currentDate,
+          push_count: pushLimits.pushCount + 1,
+          max_pushes: pushLimits.maxPushes
+        }, {
+          onConflict: 'user_id,push_date'
+        })
+        .select()
+        .single();
+
+      if (upsertError) {
+        console.error('Error updating daily limits:', upsertError);
+        throw upsertError;
+      }
+
+      // Get current poll push count and increment it
+      const { data: currentPoll, error: getPollError } = await supabase
+        .from('polls')
+        .select('push_count')
+        .eq('id', pollId)
+        .single();
+
+      if (!getPollError && currentPoll) {
+        const { error: pollUpdateError } = await supabase
+          .from('polls')
+          .update({ 
+            push_count: (currentPoll.push_count || 0) + 1 
+          })
+          .eq('id', pollId);
+
+        if (pollUpdateError) {
+          console.error('Error updating poll push count:', pollUpdateError);
+          // Don't throw here as the push was successful
+        }
+      }
+
+      // Update local state
       const newPushCount = pushLimits.pushCount + 1;
       const updatedLimits = {
         ...pushLimits,
@@ -125,7 +218,7 @@ export const usePushSystem = () => {
 
       toast({
         title: "Success",
-        description: "Poll pushed! 🚀 (Local mode)",
+        description: "Poll pushed! 🚀",
       });
 
       return true;
