@@ -45,3 +45,5 @@ export const useUserModal = () => {
     closeModal,
   };
 };
+
+export default useUserModal;
