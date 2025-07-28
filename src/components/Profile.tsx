@@ -1,12 +1,96 @@
 
+import { useState, useEffect } from 'react';
 import { User, Settings, LogIn, Heart, BarChart3, LogOut, Award, Vote, Rocket } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+
+interface UserStats {
+  createdPolls: number;
+  votedPolls: number;
+  boostsReceived: number;
+  votesReceived: number;
+}
 
 const Profile = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const [stats, setStats] = useState<UserStats>({
+    createdPolls: 0,
+    votedPolls: 0,
+    boostsReceived: 0,
+    votesReceived: 0,
+  });
+  const [loading, setLoading] = useState(false);
+
+  const fetchUserStats = async () => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+
+      // Get created polls count
+      const { count: createdCount } = await supabase
+        .from("polls")
+        .select("*", { count: "exact", head: true })
+        .eq("created_by", user.id);
+
+      // Get voted polls count (unique polls voted on)
+      const { data: votedData } = await supabase
+        .from("user_votes")
+        .select("poll_id")
+        .eq("user_id", user.id);
+
+      const uniqueVotedPolls = new Set(votedData?.map(vote => vote.poll_id) || []).size;
+
+      // Get boosts received on user's polls
+      const { data: userPolls } = await supabase
+        .from("polls")
+        .select("id")
+        .eq("created_by", user.id);
+
+      const userPollIds = userPolls?.map(poll => poll.id) || [];
+      
+      let totalBoosts = 0;
+      if (userPollIds.length > 0) {
+        const { data: boostData } = await supabase
+          .from("polls")
+          .select("push_count")
+          .in("id", userPollIds);
+        
+        totalBoosts = boostData?.reduce((sum, poll) => sum + (poll.push_count || 0), 0) || 0;
+      }
+
+      // Get votes received on user's polls
+      let totalVotes = 0;
+      if (userPollIds.length > 0) {
+        const { count: votesCount } = await supabase
+          .from("user_votes")
+          .select("*", { count: "exact", head: true })
+          .in("poll_id", userPollIds);
+        
+        totalVotes = votesCount || 0;
+      }
+
+      setStats({
+        createdPolls: createdCount || 0,
+        votedPolls: uniqueVotedPolls,
+        boostsReceived: totalBoosts,
+        votesReceived: totalVotes,
+      });
+    } catch (error) {
+      console.error("Error fetching user stats:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchUserStats();
+    }
+  }, [user]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -73,19 +157,27 @@ const Profile = () => {
             </div>
             <div className="grid grid-cols-2 gap-4 text-center">
               <div>
-                <div className="text-2xl font-bold text-white">-</div>
+                <div className="text-2xl font-bold text-white">
+                  {loading ? "..." : stats.createdPolls}
+                </div>
                 <div className="text-white/60 text-sm">Created polls</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-white">-</div>
+                <div className="text-2xl font-bold text-white">
+                  {loading ? "..." : stats.votedPolls}
+                </div>
                 <div className="text-white/60 text-sm">Voted</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-white">-</div>
+                <div className="text-2xl font-bold text-white">
+                  {loading ? "..." : stats.boostsReceived}
+                </div>
                 <div className="text-white/60 text-sm">Boosts received</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-white">-</div>
+                <div className="text-2xl font-bold text-white">
+                  {loading ? "..." : stats.votesReceived}
+                </div>
                 <div className="text-white/60 text-sm">Votes received</div>
               </div>
             </div>
