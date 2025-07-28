@@ -245,8 +245,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+  get_user_stats: {
+    Args: {
+      user_uuid: string
     }
+    Returns: {
+      created_polls: number
+      votes_cast: number
+      votes_received: number
+      boosts_received: number
+    }[]
+  }
+}
+
     Enums: {
       poll_status: "active" | "archived"
     }
