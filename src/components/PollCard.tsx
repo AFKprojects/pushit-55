@@ -1,6 +1,8 @@
-import { useState } from 'react';
-import { TrendingUp, Users, Clock, BookmarkPlus, EyeOff, Rocket } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Rocket, BookmarkPlus, EyeOff, Clock, User, BarChart3 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface PollOption {
   id: string;
@@ -43,12 +45,12 @@ interface PollCardProps {
   isEditingVote?: boolean;
 }
 
-const PollCard = ({ 
-  poll, 
-  user, 
-  isArchive = false, 
-  votingOption, 
-  votingProgress, 
+const PollCard = ({
+  poll,
+  user,
+  isArchive = false,
+  votingOption,
+  votingProgress,
   countdownSeconds,
   onVoteStart,
   onVoteEnd,
@@ -60,11 +62,54 @@ const PollCard = ({
   canEditVote = false,
   isEditingVote = false
 }: PollCardProps) => {
+  const navigate = useNavigate();
+  const [timeLeft, setTimeLeft] = useState(poll.timeLeft || "");
+  const [isEditing, setIsEditing] = useState(false);
+
   const isExpired = poll.timeLeft === "Ended";
   const canVote = user && !isArchive && !isExpired && (!poll.hasVoted || isEditingVote);
   const showPushButton = poll.hasVoted && !isArchive && !isExpired;
   const isPushed = hasPushedPoll(poll.id);
   const canPush = canPushPoll(poll.id, poll.hasVoted || false);
+
+  useEffect(() => {
+    const calculateTimeLeft = () => {
+      if (!poll.expires_at) return "N/A";
+
+      const difference = new Date(poll.expires_at).getTime() - new Date().getTime();
+
+      if (difference <= 0) {
+        setTimeLeft("Ended");
+        return;
+      }
+
+      const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+
+      let timeLeftString = "";
+
+      if (days > 0) {
+        timeLeftString += `${days}d `;
+      }
+
+      if (hours > 0) {
+        timeLeftString += `${hours}h `;
+      }
+
+      timeLeftString += `${minutes}m`;
+      setTimeLeft(timeLeftString);
+    };
+
+    if (poll.status === "active" && timeLeft !== "Ended") {
+      calculateTimeLeft();
+      const intervalId = setInterval(calculateTimeLeft, 60000); // Update every minute
+
+      return () => clearInterval(intervalId);
+    } else if (poll.status !== "active") {
+      setTimeLeft("Ended");
+    }
+  }, [poll.expires_at, poll.status, timeLeft]);
 
   return (
     <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-6 border border-orange-500/30">
@@ -96,28 +141,20 @@ const PollCard = ({
 
       <div className="space-y-3 mb-4">
         {poll.options.map((option, index) => {
-           const isVoting = votingOption?.pollId === poll.id && votingOption?.optionIndex === index;
-           const isUserVote = poll.hasVoted && poll.userVote === option.id && !isEditingVote;
-           
-           console.log('Option debug:', { 
-             optionId: option.id.slice(0,8), 
-             hasVoted: poll.hasVoted, 
-             userVote: poll.userVote?.slice(0,8), 
-             isEditingVote, 
-             isUserVote 
-           });
+          const isVoting = votingOption?.pollId === poll.id && votingOption?.optionIndex === index;
+          const isUserVote = poll.hasVoted && poll.userVote === option.id && !isEditingVote;
           
           return (
             <div
               key={option.id}
-               className={`bg-black/20 rounded-lg p-3 ${canVote ? 'cursor-pointer hover:bg-black/40' : 'cursor-default'} transition-colors relative overflow-hidden ${
-                 isUserVote ? 'ring-2 ring-orange-400' : ''
-               }`}
-               onMouseDown={() => canVote && onVoteStart(poll.id, index)}
-               onMouseUp={onVoteEnd}
-               onMouseLeave={onVoteEnd}
-               onTouchStart={() => canVote && onVoteStart(poll.id, index)}
-               onTouchEnd={onVoteEnd}
+              className={`bg-black/20 rounded-lg p-3 ${canVote ? 'cursor-pointer hover:bg-black/40' : 'cursor-default'} transition-colors relative overflow-hidden ${
+                isUserVote ? 'ring-2 ring-orange-400' : ''
+              }`}
+              onMouseDown={() => canVote && onVoteStart(poll.id, index)}
+              onMouseUp={onVoteEnd}
+              onMouseLeave={onVoteEnd}
+              onTouchStart={() => canVote && onVoteStart(poll.id, index)}
+              onTouchEnd={onVoteEnd}
             >
               {isVoting && (
                 <>
@@ -156,7 +193,7 @@ const PollCard = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4 text-orange-300/70 text-sm">
           <div className="flex items-center">
-            <Users size={16} className="mr-1" />
+            <User size={16} className="mr-1" />
             {poll.total_votes} votes
           </div>
           {poll.push_count > 0 && (
@@ -165,10 +202,6 @@ const PollCard = ({
               {poll.push_count} pushes
             </div>
           )}
-          <div className="flex items-center">
-            <TrendingUp size={16} className="mr-1" />
-            {isEditingVote ? 'Editing...' : poll.hasVoted ? 'Voted' : isArchive ? 'Ended' : 'Active'}
-          </div>
         </div>
 
         {user && !isArchive && (
@@ -182,11 +215,6 @@ const PollCard = ({
               >
                 Edit Vote
               </Button>
-            )}
-            {isEditingVote && (
-              <div className="text-orange-400/80 text-xs flex items-center">
-                Select new option (1 edit allowed)
-              </div>
             )}
             {showPushButton && (
               <Button
@@ -214,6 +242,15 @@ const PollCard = ({
                 <BookmarkPlus size={16} />
               </Button>
             )}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => navigate(`/poll/${poll.id}`)}
+              className="border-blue-500/30 text-blue-300 hover:bg-blue-500/10"
+            >
+              <BarChart3 size={16} className="mr-1" />
+              View Details
+            </Button>
             <Button
               size="sm"
               variant="outline"
