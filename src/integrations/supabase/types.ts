@@ -240,6 +240,75 @@ export type Database = {
           },
         ]
       }
+      user_pushes: {
+ Row: {
+    id: string
+    user_id: string
+    poll_id: string
+    pushed_at: string
+  }
+  Insert: {
+    id?: string
+    user_id: string
+    poll_id: string
+    pushed_at?: string
+  }
+  Update: {
+    id?: string
+    user_id?: string
+    poll_id?: string
+    pushed_at?: string
+  }
+  Relationships: [
+    {
+      foreignKeyName: "user_pushes_user_id_fkey"
+      columns: ["user_id"]
+      isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },
+    {
+      foreignKeyName: "user_pushes_poll_id_fkey"
+      columns: ["poll_id"]
+      isOneToOne: false
+      referencedRelation: "polls"
+      referencedColumns: ["id"]
+    }
+  ]
+}
+
+daily_push_limits: {
+  Row: {
+    id: string
+    user_id: string
+    push_date: string
+    push_count: number
+    max_pushes: number
+  }
+  Insert: {
+    id?: string
+    user_id: string
+    push_date?: string
+    push_count?: number
+    max_pushes?: number
+  }
+  Update: {
+    id?: string
+    user_id?: string
+    push_date?: string
+    push_count?: number
+    max_pushes?: number
+  }
+  Relationships: [
+    {
+      foreignKeyName: "daily_push_limits_user_id_fkey"
+      columns: ["user_id"]
+      isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+  ]
+}
     }
     Views: {
       [_ in never]: never
