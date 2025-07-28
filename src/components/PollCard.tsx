@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Rocket, BookmarkPlus, EyeOff, Clock, User, BarChart3 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { usePollModal } from "@/hooks/usePollModal";
 
 interface PollOption {
   id: string;
@@ -62,7 +62,7 @@ const PollCard = ({
   canEditVote = false,
   isEditingVote = false
 }: PollCardProps) => {
-  const navigate = useNavigate();
+  const { openModal } = usePollModal();
   const [timeLeft, setTimeLeft] = useState(poll.timeLeft || "");
   const [isEditing, setIsEditing] = useState(false);
 
@@ -245,7 +245,7 @@ const PollCard = ({
             <Button
               size="sm"
               variant="outline"
-              onClick={() => navigate(`/poll/${poll.id}`)}
+              onClick={() => openModal(poll.id)}
               className="border-blue-500/30 text-blue-300 hover:bg-blue-500/10"
             >
               <BarChart3 size={16} className="mr-1" />

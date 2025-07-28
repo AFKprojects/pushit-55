@@ -9,7 +9,9 @@ import { useAuth } from '../hooks/useAuth';
 import { useSessionManager } from '../hooks/useSessionManager';
 import { Button } from '@/components/ui/button';
 import { LogIn } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import PollModal from '@/components/PollModal';
+import { usePollModal } from '@/hooks/usePollModal';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('main');
@@ -17,6 +19,8 @@ const Index = () => {
   const { user } = useAuth();
   const { activeSessionCount, startSession, endSession } = useSessionManager();
   const navigate = useNavigate();
+  const params = useParams();
+  const { openModal } = usePollModal();
 
   // Ensure consistent dark theme appearance
   useEffect(() => {
@@ -25,6 +29,16 @@ const Index = () => {
     // Force light mode to prevent auto dark mode
     document.documentElement.classList.remove('dark');
   }, []);
+
+  // Handle direct poll URL access
+  useEffect(() => {
+    const path = window.location.pathname;
+    const pollMatch = path.match(/^\/poll\/([^\/]+)$/);
+    if (pollMatch) {
+      const pollId = pollMatch[1];
+      openModal(pollId);
+    }
+  }, [openModal]);
 
   const handleHoldStart = () => {
     if (user) {
@@ -122,6 +136,7 @@ const Index = () => {
         {renderContent()}
         
         <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
+        <PollModal />
       </div>
       
       <style>{`

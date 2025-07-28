@@ -1,10 +1,11 @@
 
 import { useState, useEffect } from 'react';
-import { TrendingUp, Users, Clock, Trash2 } from 'lucide-react';
+import { TrendingUp, Users, Clock, Trash2, BarChart3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
+import { usePollModal } from '@/hooks/usePollModal';
 
 interface SavedPoll {
   id: string;
@@ -31,6 +32,7 @@ const SavedPolls = () => {
   const [countdownSeconds, setCountdownSeconds] = useState(0);
   const { user } = useAuth();
   const { toast } = useToast();
+  const { openModal } = usePollModal();
 
   const calculateTimeLeft = (expiresAt: string) => {
     const now = new Date();
@@ -322,14 +324,25 @@ const SavedPolls = () => {
           </div>
 
           <div className="flex items-center justify-between text-orange-300/70 text-sm">
-            <div className="flex items-center">
-              <Users size={16} className="mr-1" />
-              {poll.total_votes} votes
+            <div className="flex items-center gap-4">
+              <div className="flex items-center">
+                <Users size={16} className="mr-1" />
+                {poll.total_votes} votes
+              </div>
+              <div className="flex items-center">
+                <TrendingUp size={16} className="mr-1" />
+                {poll.hasVoted ? 'Voted' : 'Saved'}
+              </div>
             </div>
-            <div className="flex items-center">
-              <TrendingUp size={16} className="mr-1" />
-              {poll.hasVoted ? 'Voted' : 'Saved'}
-            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => openModal(poll.id)}
+              className="border-blue-500/30 text-blue-300 hover:bg-blue-500/10"
+            >
+              <BarChart3 size={16} className="mr-1" />
+              View Details
+            </Button>
           </div>
         </div>
       ))}

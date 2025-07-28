@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
+import { usePollModal } from '@/hooks/usePollModal';
 
 interface ArchiveSearchProps {
   onSearch?: (pollId: string) => void;
@@ -11,15 +11,15 @@ interface ArchiveSearchProps {
 
 const ArchiveSearch = ({ onSearch, isLoading = false }: ArchiveSearchProps) => {
   const [searchId, setSearchId] = useState('');
-  const navigate = useNavigate();
+  const { openModal } = usePollModal();
 
   const handleSearch = () => {
     if (searchId.trim()) {
       if (onSearch) {
         onSearch(searchId.trim());
       } else {
-        // Navigate to poll view
-        navigate(`/poll/${searchId.trim()}`);
+        // Open poll in modal
+        openModal(searchId.trim());
       }
     }
   };
