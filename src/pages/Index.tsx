@@ -57,7 +57,7 @@ const Index = () => {
     switch (activeTab) {
       case 'polls':
         return (
-          <div className="flex-1 overflow-y-auto pb-20">
+          <div className="flex-1 overflow-y-auto pb-24">
             <Polls 
               onNavigateToCreate={() => setActiveTab('create')}
             />
@@ -65,19 +65,19 @@ const Index = () => {
         );
       case 'create':
         return (
-          <div className="flex-1 overflow-y-auto pb-20">
+          <div className="flex-1 overflow-y-auto pb-24">
             <Create />
           </div>
         );
       case 'statistics':
         return (
-          <div className="flex-1 overflow-y-auto pb-20">
+          <div className="flex-1 overflow-y-auto pb-24">
             <Statistics />
           </div>
         );
       case 'myapp':
         return (
-          <div className="flex-1 overflow-y-auto pb-20">
+          <div className="flex-1 overflow-y-auto pb-24">
             <MyApp />
           </div>
         );
@@ -146,15 +146,11 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-blue-900 relative overflow-hidden" style={{ backgroundColor: '#000' }}>
-      <div className="relative z-10 flex flex-col h-screen">
-        <div className="flex-1 overflow-hidden">
-          {renderContent()}
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-blue-900 relative" style={{ backgroundColor: '#000' }}>
+      <div className="flex flex-col h-screen">
+        {renderContent()}
         
-        <div className="relative z-20">
-          <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
-        </div>
+        <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
         <PollModal />
         <UserModal />
       </div>

@@ -191,6 +191,7 @@ const Statistics = () => {
 
         const maxSimultaneous24h = await calculateMaxSimultaneous(oneDayAgo.toISOString());
         const countryRanking = await getCountryStats(oneDayAgo.toISOString());
+        console.log('Daily country ranking:', countryRanking);
 
         setDailyStats({
           pollsCreated24h: pollsCreated24h || 0,
