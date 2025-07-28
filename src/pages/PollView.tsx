@@ -331,7 +331,7 @@ const PollView = () => {
         title: "Poll Hidden",
         description: "This poll has been hidden from your feed.",
       });
-      navigate("/");
+      navigate(-1);
     } catch (error) {
       console.error("Error hiding poll:", error);
       toast({
@@ -408,7 +408,7 @@ const PollView = () => {
         <div className="flex items-center mb-6">
           <Button
             variant="ghost"
-            onClick={() => navigate("/")}
+            onClick={() => navigate(-1)}
             className="text-white hover:bg-white/10"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
