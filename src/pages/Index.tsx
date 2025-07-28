@@ -113,7 +113,7 @@ const Index = () => {
                           {activeSessionCount}
                         </div>
                         <div className="text-orange-200 text-sm text-center">
-                          {activeSessionCount === 1 ? 'person is holding' : 'people are holding'} together with you
+                          {activeSessionCount === 1 ? 'person is holding' : 'people are holding'} the button right now
                         </div>
                       </>
                     ) : (
@@ -134,9 +134,13 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-blue-900 relative overflow-hidden" style={{ backgroundColor: '#000' }}>
       <div className="relative z-10 flex flex-col h-screen">
-        {renderContent()}
+        <div className="flex-1 overflow-hidden">
+          {renderContent()}
+        </div>
         
-        <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
+        <div className="relative z-20">
+          <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
+        </div>
         <PollModal />
         <UserModal />
       </div>

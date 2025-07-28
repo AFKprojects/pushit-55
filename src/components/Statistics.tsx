@@ -90,25 +90,35 @@ const Statistics = () => {
   };
 
   const getCountryStats = async (timeFilter: string) => {
-    const { data: buttonPresses } = await supabase
-      .from('button_holds')
-      .select('country')
-      .gte('started_at', timeFilter)
-      .not('country', 'is', null);
+    try {
+      const { data: buttonPresses, error } = await supabase
+        .from('button_holds')
+        .select('country')
+        .gte('started_at', timeFilter)
+        .not('country', 'is', null);
 
-    const countryCounts: { [key: string]: number } = {};
-    buttonPresses?.forEach(press => {
-      const country = press.country || 'Unknown';
-      countryCounts[country] = (countryCounts[country] || 0) + 1;
-    });
+      if (error) {
+        console.error('Error fetching country stats:', error);
+        return [];
+      }
 
-    return Object.entries(countryCounts)
-      .sort(([,a], [,b]) => b - a)
-      .map(([country, count]) => ({
-        country,
-        code: countryCodeMap[country] || 'XX',
-        count
-      }));
+      const countryCounts: { [key: string]: number } = {};
+      buttonPresses?.forEach(press => {
+        const country = press.country || 'Unknown';
+        countryCounts[country] = (countryCounts[country] || 0) + 1;
+      });
+
+      return Object.entries(countryCounts)
+        .sort(([,a], [,b]) => b - a)
+        .map(([country, count]) => ({
+          country,
+          code: countryCodeMap[country] || 'XX',
+          count
+        }));
+    } catch (error) {
+      console.error('Error in getCountryStats:', error);
+      return [];
+    }
   };
 
   const calculateMaxSimultaneous = async (startDate?: string) => {
