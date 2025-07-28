@@ -20,40 +20,32 @@ export const useUserStats = () => {
   const { user } = useAuth();
 
   const fetchStatsManual = async () => {
-    if (!user) return;
+  if (!user) return;
 
-    try {
-      // Get created polls count
-      const { count: createdCount } = await supabase
-        .from('polls')
-        .select('*', { count: 'exact', head: true })
-        .eq('created_by', user.id);
+  try {
+    // Use RPC function for optimized stats fetching
+    const { data, error } = await supabase
+      .rpc('get_user_stats', { user_uuid: user.id });
 
-      // Get votes cast count  
-      const { count: votesCount } = await supabase
-        .from('user_votes')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id);
-
-      // Get user's polls for vote/boost calculations
-      const { data: userPolls } = await supabase
-        .from('polls')
-        .select('push_count, total_votes')
-        .eq('created_by', user.id);
-
-      const votesReceived = userPolls?.reduce((sum: number, poll: any) => sum + (poll.total_votes || 0), 0) || 0;
-      const boostsReceived = userPolls?.reduce((sum: number, poll: any) => sum + (poll.push_count || 0), 0) || 0;
-
-      setStats({
-        createdPolls: createdCount || 0,
-        votesCast: votesCount || 0,
-        votesReceived,
-        boostsReceived
-      });
-    } catch (error) {
-      console.error('Error in manual stats fetch:', error);
+    if (error) {
+      console.error('Error fetching stats:', error);
+      return;
     }
-  };
+
+    const statsData = data?.[0];
+    if (statsData) {
+      setStats({
+        createdPolls: Number(statsData.created_polls) || 0,
+        votesCast: Number(statsData.votes_cast) || 0,
+        votesReceived: Number(statsData.votes_received) || 0,
+        boostsReceived: Number(statsData.boosts_received) || 0
+      });
+    }
+  } catch (error) {
+    console.error('Error in manual stats fetch:', error);
+  }
+};
+
 
   const fetchStats = async () => {
     if (!user) {
