@@ -152,6 +152,7 @@ export const useSessionManager = () => {
 
     try {
       console.log('🚀 Starting new session for user:', user.id, 'device:', deviceId.current);
+      console.log('🌍 Country from geolocation:', country);
       
       // Remove any existing sessions for this user first
       await supabase
@@ -170,10 +171,12 @@ export const useSessionManager = () => {
           is_active: true,
           started_at: now,
           last_heartbeat: now,
-          country: country
+          country: country || 'Unknown'
         })
         .select()
         .single();
+
+      console.log('📝 Session insert result:', { data, error });
 
       if (!error && data) {
         console.log('✅ Session created:', data.id, 'started at:', now);

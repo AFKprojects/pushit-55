@@ -91,11 +91,16 @@ const Statistics = () => {
 
   const getCountryStats = async (timeFilter: string) => {
     try {
+      console.log('🔍 Fetching country stats with filter:', timeFilter);
+      
       const { data: buttonPresses, error } = await supabase
         .from('button_holds')
-        .select('country')
+        .select('country, started_at')
         .gte('started_at', timeFilter)
         .not('country', 'is', null);
+
+      console.log('📊 Raw button_holds data:', buttonPresses);
+      console.log('❌ Button_holds error:', error);
 
       if (error) {
         console.error('Error fetching country stats:', error);
@@ -107,6 +112,8 @@ const Statistics = () => {
         const country = press.country || 'Unknown';
         countryCounts[country] = (countryCounts[country] || 0) + 1;
       });
+
+      console.log('📈 Country counts:', countryCounts);
 
       return Object.entries(countryCounts)
         .sort(([,a], [,b]) => b - a)
