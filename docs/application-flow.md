@@ -1,177 +1,232 @@
-# Application Flow & Architecture
+# Application Flow Documentation
 
-## User Flow Diagram
+## Overview
+This document describes the complete user flow and technical architecture of the Push It! application.
 
-```mermaid
-flowchart TD
-    A[User Authentication] --> B{Authenticated?}
-    B -->|No| C[Guest Mode]
-    B -->|Yes| D[Full Features]
-    
-    D --> E[Create Poll]
-    D --> F[Vote on Poll]
-    D --> G[Manage Polls]
-    
-    E --> E1[Fill Question]
-    E1 --> E2[Add Options]
-    E2 --> E3[Set Creator Visibility]
-    E3 --> E4[Submit Poll]
-    E4 --> E5[Poll Active]
-    
-    F --> F1{Already Voted?}
-    F1 -->|No| F2[Cast Vote]
-    F1 -->|Yes| F3{Can Edit Vote?}
-    F3 -->|Yes| F4[Edit Vote Once]
-    F3 -->|No| F5[View Results]
-    F4 --> F6[Vote Edited - No More Changes]
-    
-    G --> G1[Save Poll]
-    G --> G2[Hide Poll]
-    G --> G3[Push Poll]
-    
-    G3 --> G4{Push Limits?}
-    G4 -->|Available| G5[Increment Push Count]
-    G4 -->|Exceeded| G6[Cannot Push]
-    
-    E5 --> H[Poll Lifecycle]
-    H --> H1{Expired?}
-    H1 -->|No| H2[Active State]
-    H1 -->|Yes| H3[Archived State]
-    
-    H2 --> I[Real-time Updates]
-    I --> I1[Vote Count Updates]
-    I --> I2[New Polls Appear]
-    I --> I3[Status Changes]
-    
-    C --> J[Limited Features]
-    J --> J1[View Polls Only]
-    J --> J2[Cannot Vote/Create]
-    
-    K[Session Management] --> K1[Device Tracking]
-    K1 --> K2[Heartbeat System]
-    K2 --> K3[Activity Statistics]
+## Main Navigation Structure
+
+The application uses a bottom navigation with 5 main sections:
+
+### 1. The Button (Main) - `/`
+**Purpose**: Global button interaction experience
+**Flow**:
+```
+Landing → [Optional] Login → Button Interaction → Real-time Feedback
 ```
 
-## API Interaction Sequence
+**Components**:
+- `HoldButton`: Main interactive component
+- Session management via `useSessionManager`
+- Geolocation tracking via `useGeolocation`
+- Real-time counter display
 
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant F as Frontend
-    participant S as Supabase
-    participant E as Edge Functions
-    
-    Note over U,E: Poll Creation Flow
-    U->>F: Create Poll
-    F->>S: Check Authentication
-    S-->>F: User Session
-    F->>S: Insert Poll + Options
-    S-->>F: Poll Created
-    F->>U: Redirect to Polls
-    
-    Note over U,E: Voting Flow
-    U->>F: Vote on Poll
-    F->>S: Check Existing Vote
-    S-->>F: Vote Status
-    alt No Previous Vote
-        F->>S: Insert New Vote
-        F->>S: Update Option Count
-    else Has Previous Vote & Can Edit
-        F->>S: Update Existing Vote
-        F->>S: Update Option Counts
-    end
-    S-->>F: Vote Registered
-    F->>U: Update UI
-    
-    Note over U,E: Real-time Updates
-    S->>F: Poll Changes (Subscription)
-    S->>F: Vote Changes (Subscription)
-    F->>U: Live UI Updates
-    
-    Note over U,E: Poll Management
-    F->>E: Trigger manage-polls
-    E->>S: Cleanup Expired Polls
-    E->>S: Update Poll Status
-    E-->>F: Management Complete
-    
-    Note over U,E: Session Tracking
-    F->>S: Start Session
-    loop Every 30s
-        F->>S: Send Heartbeat
-    end
-    F->>S: End Session
+**Technical Flow**:
+1. User lands on main page
+2. Geolocation is detected for country statistics
+3. User holds button for 3 seconds
+4. Session is created in `button_holds` table with country data
+5. Real-time heartbeat system maintains active session
+6. Global counter shows current active users
+7. Session ends when user releases button
+
+### 2. Vote (Polls) - Navigation Tab
+**Purpose**: Poll browsing and voting interface
+**Flow**:
 ```
+Browse Polls → Filter/Search → Vote → [Optional] Edit Vote → View Results
+```
+
+**Components**:
+- `Polls`: Main polling interface
+- `PollCard`: Individual poll display
+- `SortingTabs`: Hot/Popular/New filtering
+- `ArchiveSearch`: Search functionality
+
+**Technical Flow**:
+1. Fetch polls with real-time subscriptions
+2. Display with voting options and current results
+3. Handle vote submission/editing
+4. Update statistics in real-time
+5. Archive expired polls automatically
+
+### 3. Create - Navigation Tab
+**Purpose**: Poll creation interface
+**Flow**:
+```
+Create Form → Add Options → Set Duration → [Login Required] → Submit → Redirect to Polls
+```
+
+**Components**:
+- `Create`: Main creation wrapper
+- `CreatePollForm`: Form interface
+- `OptionsManager`: Dynamic option management
+- `QuestionInput`: Question input with validation
+- `PollDurationInfo`: Time limit settings
+
+**Technical Flow**:
+1. User fills poll form (question + options)
+2. Sets poll duration
+3. Authentication check (redirect if needed)
+4. Poll submission to database
+5. Automatic redirect to polls view
+
+### 4. Stats (Statistics) - Navigation Tab
+**Purpose**: Community analytics and metrics
+**Flow**:
+```
+View Dashboard → Switch Time Periods → Browse Country Rankings → View Records
+```
+
+**Components**:
+- `Statistics`: Main analytics dashboard
+- Time-based tabs (Daily/Monthly/Hall of Fame)
+- Country ranking components
+- Real-time metrics
+
+**Data Sources**:
+- `button_holds`: Geographic and session data
+- `polls`: Poll creation metrics
+- `user_votes`: Voting statistics
+- `profiles`: User counts
+
+**Time Periods**:
+- **Daily**: Last 24 hours
+- **Monthly**: Last 30 days  
+- **Hall of Fame**: All-time records
+
+### 5. My App - Navigation Tab
+**Purpose**: User profile and personal data management
+**Flow**:
+```
+[Login Required] → Profile Tabs → Manage Polls → View Statistics → Settings
+```
+
+**Sub-sections**:
+- **My Polls**: Created/Voted/Saved polls management
+- **Community**: User search and social features
+- **Profile**: Account settings and personal statistics
+
+## Authentication Flow
+
+### Registration/Login Process
+```
+Guest → Auth Page → [Email/Google] → Profile Creation → Dashboard Access
+```
+
+**Components**:
+- `Auth`: Authentication interface
+- `AuthProvider`: Context for auth state
+- Integration with Supabase Auth
+
+### Profile Management
+```
+Login → Profile Setup → Avatar Upload → Username/Bio → Privacy Settings
+```
+
+## Real-time Systems
+
+### Button Session Management
+**Hook**: `useSessionManager`
+**Flow**:
+1. Session creation with device fingerprinting
+2. Heartbeat system (every 3 seconds)
+3. Cleanup of inactive sessions (15+ seconds)
+4. Real-time session counting
+5. Geographic data tracking
+
+### Poll Real-time Updates
+**Subscriptions**:
+- Vote updates
+- New poll notifications  
+- Statistics refresh
+- Comment systems (future)
+
+### Statistics Real-time Refresh
+**Triggers**:
+- New button sessions
+- Poll votes
+- User registrations
+- Geographic data changes
+
+## Data Models and Relationships
+
+### Core Entities
+```
+User (profiles)
+├── Button Sessions (button_holds)
+├── Created Polls (polls)
+├── Votes (user_votes)
+├── Saved Polls (saved_polls)
+└── Push Actions (user_pushes)
+
+Poll (polls)
+├── Options (poll_options)  
+├── Votes (user_votes)
+└── Push History (user_pushes)
+```
+
+### Key Relationships
+- Users can create multiple polls
+- Users can vote on multiple polls (one vote per poll)
+- Users can save polls for later
+- Users can boost/push polls (daily limits)
+- Button sessions track geographic data
 
 ## State Management
 
-```mermaid
-stateDiagram-v2
-    [*] --> Unauthenticated
-    
-    Unauthenticated --> Authenticated: Login/Register
-    Authenticated --> Unauthenticated: Logout
-    
-    state Authenticated {
-        [*] --> Browsing
-        
-        Browsing --> Creating: Click Create
-        Creating --> Browsing: Submit Poll
-        
-        Browsing --> Voting: Click Vote Option
-        Voting --> Voted: Submit Vote
-        Voted --> EditingVote: Click Edit (once only)
-        EditingVote --> VoteEdited: Submit New Vote
-        VoteEdited --> Voted: Cannot Edit Again
-        
-        Browsing --> Managing: Save/Hide/Push
-        Managing --> Browsing: Action Complete
-        
-        state PollLifecycle {
-            [*] --> Active
-            Active --> Expired: Time Elapsed
-            Expired --> Archived: Cleanup Process
-        }
-        
-        state PushSystem {
-            [*] --> CanPush
-            CanPush --> PushUsed: Push Poll
-            PushUsed --> CanPush: Reset Daily
-            PushUsed --> PushLimitReached: Max Reached
-        }
-    }
-    
-    state SessionManagement {
-        [*] --> Inactive
-        Inactive --> Active: User Activity
-        Active --> Heartbeat: Every 30s
-        Heartbeat --> Active: Continue
-        Active --> Inactive: No Activity
-        Inactive --> Cleanup: After Timeout
-    }
-```
+### Global State (Context)
+- Authentication state (`AuthProvider`)
+- Real-time session data (`useSessionManager`)
 
-## Key Components & Behavior
+### Local State (Hooks)
+- Poll data (`usePolls`)
+- User statistics (`useUserStats`)  
+- Modal state (`usePollModal`, `useUserModal`)
+- Poll management (`usePollManagement`)
 
-### Authentication System
-- **Guest Mode**: Read-only access to polls
-- **Authenticated Mode**: Full CRUD operations
-- **Session Persistence**: Local storage with auto-refresh
+## Error Handling
 
-### Voting System
-- **Single Vote**: One vote per user per poll
-- **Vote Editing**: One-time edit capability after initial vote
-- **Real-time Updates**: Live vote count synchronization
+### Network Errors
+- Retry mechanisms for failed requests
+- Offline state handling
+- User feedback via toast notifications
 
-### Poll Management
-- **Creation**: Question + multiple options with creator visibility option
-- **Lifecycle**: Active (24h) → Expired → Archived
-- **Push System**: User-driven promotion with daily limits
+### Authentication Errors  
+- Automatic redirect to login
+- Session expiry handling
+- Permission-based access control
 
-### Real-time Features
-- **Supabase Subscriptions**: Live updates for polls and votes
-- **Session Tracking**: Heartbeat system for activity statistics
-- **Statistics**: Real-time user count and activity metrics
+### Data Validation
+- Form validation for poll creation
+- Input sanitization
+- Rate limiting enforcement
 
-### Edge Functions
-- **manage-polls**: Automated cleanup of expired polls
-- **Triggers**: Time-based and manual poll management
+## Mobile Responsiveness
+
+### Layout Adaptations
+- Bottom navigation for mobile
+- Touch-optimized interactions
+- Responsive typography and spacing
+- Mobile-first design approach
+
+### Performance Optimizations
+- Component lazy loading
+- Optimized re-renders
+- Efficient real-time subscriptions
+- Image optimization for avatars
+
+## Future Enhancements
+
+### Planned Features
+- Comment system for polls
+- Push notifications
+- Advanced analytics dashboard
+- Social features (following/followers)
+- Poll templates and categories
+- Advanced geographic analytics
+
+### Technical Improvements
+- Service worker for offline support
+- Progressive Web App features
+- Advanced caching strategies
+- Performance monitoring

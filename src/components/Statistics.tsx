@@ -93,13 +93,13 @@ const Statistics = () => {
     try {
       console.log('🔍 Fetching country stats with filter:', timeFilter);
       
+      // Get all button_holds records regardless of ended_at to include current sessions
       const { data: buttonPresses, error } = await supabase
         .from('button_holds')
-        .select('country, started_at')
-        .gte('started_at', timeFilter)
-        .not('country', 'is', null);
+        .select('country, started_at, ended_at')
+        .gte('started_at', timeFilter);
 
-      console.log('📊 Raw button_holds data:', buttonPresses);
+      console.log('📊 Raw button_holds data (all records):', buttonPresses);
       console.log('❌ Button_holds error:', error);
 
       if (error) {
@@ -107,21 +107,31 @@ const Statistics = () => {
         return [];
       }
 
+      if (!buttonPresses || buttonPresses.length === 0) {
+        console.log('📭 No button_holds records found');
+        return [];
+      }
+
       const countryCounts: { [key: string]: number } = {};
       buttonPresses?.forEach(press => {
-        const country = press.country || 'Unknown';
-        countryCounts[country] = (countryCounts[country] || 0) + 1;
+        if (press.country) {
+          const country = press.country;
+          countryCounts[country] = (countryCounts[country] || 0) + 1;
+        }
       });
 
       console.log('📈 Country counts:', countryCounts);
 
-      return Object.entries(countryCounts)
+      const results = Object.entries(countryCounts)
         .sort(([,a], [,b]) => b - a)
         .map(([country, count]) => ({
           country,
           code: countryCodeMap[country] || 'XX',
           count
         }));
+
+      console.log('🏁 Final country results:', results);
+      return results;
     } catch (error) {
       console.error('Error in getCountryStats:', error);
       return [];
