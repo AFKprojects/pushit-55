@@ -1,15 +1,33 @@
-
-import { BarChart3, Globe, Clock, Trophy, TrendingUp, Users } from 'lucide-react';
+import { BarChart3, Globe, Clock, Trophy, TrendingUp, Users, Calendar, Vote, Activity, Award } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-interface StatData {
-  totalUsers: number;
-  buttonPresses24h: number;
+interface DailyStats {
+  pollsCreated24h: number;
+  votes24h: number;
   maxSimultaneous24h: number;
-  allTimeRecord: number;
-  totalPolls: number;
+  countryRanking: CountryStats[];
+  activePolls: number;
+}
+
+interface MonthlyStats {
+  pollsCreatedMonth: number;
+  votesMonth: number;
+  maxSimultaneousMonth: number;
+  countryRankingMonth: CountryStats[];
+}
+
+interface AllTimeStats {
+  totalUsers: number;
   totalVotes: number;
+  totalPolls: number;
+  allTimeRecord: number;
+  mostBoostedPoll: {
+    question: string;
+    pushCount: number;
+  } | null;
+  countryRankingAllTime: CountryStats[];
 }
 
 interface CountryStats {
@@ -19,16 +37,32 @@ interface CountryStats {
 }
 
 const Statistics = () => {
-  const [stats, setStats] = useState<StatData>({
-    totalUsers: 0,
-    buttonPresses24h: 0,
+  const [dailyStats, setDailyStats] = useState<DailyStats>({
+    pollsCreated24h: 0,
+    votes24h: 0,
     maxSimultaneous24h: 0,
-    allTimeRecord: 0,
-    totalPolls: 0,
-    totalVotes: 0
+    countryRanking: [],
+    activePolls: 0
   });
-  const [countryStats, setCountryStats] = useState<CountryStats[]>([]);
+  
+  const [monthlyStats, setMonthlyStats] = useState<MonthlyStats>({
+    pollsCreatedMonth: 0,
+    votesMonth: 0,
+    maxSimultaneousMonth: 0,
+    countryRankingMonth: []
+  });
+  
+  const [allTimeStats, setAllTimeStats] = useState<AllTimeStats>({
+    totalUsers: 0,
+    totalVotes: 0,
+    totalPolls: 0,
+    allTimeRecord: 0,
+    mostBoostedPoll: null,
+    countryRankingAllTime: []
+  });
+  
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('daily');
 
   // Country code mapping for flags
   const countryCodeMap: { [key: string]: string } = {
@@ -55,111 +89,166 @@ const Statistics = () => {
     'Unknown': 'XX'
   };
 
+  const getCountryStats = async (timeFilter: string) => {
+    const { data: buttonPresses } = await supabase
+      .from('button_holds')
+      .select('country')
+      .gte('started_at', timeFilter)
+      .not('country', 'is', null);
+
+    const countryCounts: { [key: string]: number } = {};
+    buttonPresses?.forEach(press => {
+      const country = press.country || 'Unknown';
+      countryCounts[country] = (countryCounts[country] || 0) + 1;
+    });
+
+    return Object.entries(countryCounts)
+      .sort(([,a], [,b]) => b - a)
+      .map(([country, count]) => ({
+        country,
+        code: countryCodeMap[country] || 'XX',
+        count
+      }));
+  };
+
+  const calculateMaxSimultaneous = async (startDate?: string) => {
+    let query = supabase
+      .from('button_holds')
+      .select('started_at, ended_at')
+      .not('ended_at', 'is', null)
+      .order('started_at', { ascending: true });
+
+    if (startDate) {
+      query = query.gte('started_at', startDate);
+    }
+
+    const { data: allHolds } = await query;
+    const { count: activeHolds } = await supabase
+      .from('button_holds')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_active', true);
+
+    let maxSimultaneous = activeHolds || 0;
+    
+    if (allHolds && allHolds.length > 0) {
+      const events: Array<{time: Date, type: 'start' | 'end'}> = [];
+      
+      allHolds.forEach(hold => {
+        events.push({ time: new Date(hold.started_at), type: 'start' });
+        if (hold.ended_at) {
+          events.push({ time: new Date(hold.ended_at), type: 'end' });
+        }
+      });
+      
+      events.sort((a, b) => a.time.getTime() - b.time.getTime());
+      
+      let currentSimultaneous = 0;
+      events.forEach(event => {
+        if (event.type === 'start') {
+          currentSimultaneous++;
+          maxSimultaneous = Math.max(maxSimultaneous, currentSimultaneous);
+        } else {
+          currentSimultaneous--;
+        }
+      });
+    }
+
+    return maxSimultaneous;
+  };
+
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        // Get total users count
-        const { count: usersCount } = await supabase
+        const now = new Date();
+        const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+        // Daily Stats
+        const { count: pollsCreated24h } = await supabase
+          .from('polls')
+          .select('*', { count: 'exact', head: true })
+          .gte('created_at', oneDayAgo.toISOString());
+
+        const { count: votes24h } = await supabase
+          .from('user_votes')
+          .select('*', { count: 'exact', head: true })
+          .gte('voted_at', oneDayAgo.toISOString());
+
+        const { count: activePolls } = await supabase
+          .from('polls')
+          .select('*', { count: 'exact', head: true })
+          .gt('expires_at', now.toISOString());
+
+        const maxSimultaneous24h = await calculateMaxSimultaneous(oneDayAgo.toISOString());
+        const countryRanking = await getCountryStats(oneDayAgo.toISOString());
+
+        setDailyStats({
+          pollsCreated24h: pollsCreated24h || 0,
+          votes24h: votes24h || 0,
+          maxSimultaneous24h,
+          countryRanking,
+          activePolls: activePolls || 0
+        });
+
+        // Monthly Stats
+        const { count: pollsCreatedMonth } = await supabase
+          .from('polls')
+          .select('*', { count: 'exact', head: true })
+          .gte('created_at', oneMonthAgo.toISOString());
+
+        const { count: votesMonth } = await supabase
+          .from('user_votes')
+          .select('*', { count: 'exact', head: true })
+          .gte('voted_at', oneMonthAgo.toISOString());
+
+        const maxSimultaneousMonth = await calculateMaxSimultaneous(oneMonthAgo.toISOString());
+        const countryRankingMonth = await getCountryStats(oneMonthAgo.toISOString());
+
+        setMonthlyStats({
+          pollsCreatedMonth: pollsCreatedMonth || 0,
+          votesMonth: votesMonth || 0,
+          maxSimultaneousMonth,
+          countryRankingMonth
+        });
+
+        // All-time Stats
+        const { count: totalUsers } = await supabase
           .from('profiles')
           .select('*', { count: 'exact', head: true });
 
-        // Get button presses in last 24h
-        const { count: buttonPressesCount } = await supabase
-          .from('button_holds')
-          .select('*', { count: 'exact', head: true })
-          .gte('started_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
-
-        // Get total polls
-        const { count: pollsCount } = await supabase
-          .from('polls')
-          .select('*', { count: 'exact', head: true });
-
-        // Get total votes
-        const { count: votesCount } = await supabase
+        const { count: totalVotes } = await supabase
           .from('user_votes')
           .select('*', { count: 'exact', head: true });
 
-        // Get current active holds for max simultaneous 24h
-        const { count: activeHolds } = await supabase
-          .from('button_holds')
-          .select('*', { count: 'exact', head: true })
-          .eq('is_active', true);
+        const { count: totalPolls } = await supabase
+          .from('polls')
+          .select('*', { count: 'exact', head: true });
 
-        // Calculate all-time record by finding maximum overlapping holds
-        const { data: allHolds } = await supabase
-          .from('button_holds')
-          .select('started_at, ended_at')
-          .not('ended_at', 'is', null)
-          .order('started_at', { ascending: true });
+        const allTimeRecord = await calculateMaxSimultaneous();
 
-        let maxSimultaneous = activeHolds || 0;
-        
-        if (allHolds && allHolds.length > 0) {
-          const events: Array<{time: Date, type: 'start' | 'end'}> = [];
-          
-          allHolds.forEach(hold => {
-            events.push({ time: new Date(hold.started_at), type: 'start' });
-            if (hold.ended_at) {
-              events.push({ time: new Date(hold.ended_at), type: 'end' });
-            }
-          });
-          
-          events.sort((a, b) => a.time.getTime() - b.time.getTime());
-          
-          let currentSimultaneous = 0;
-          events.forEach(event => {
-            if (event.type === 'start') {
-              currentSimultaneous++;
-              maxSimultaneous = Math.max(maxSimultaneous, currentSimultaneous);
-            } else {
-              currentSimultaneous--;
-            }
-          });
-        }
+        // Get most boosted poll
+        const { data: mostBoostedPollData } = await supabase
+          .from('polls')
+          .select('question, push_count')
+          .order('push_count', { ascending: false })
+          .limit(1)
+          .single();
 
-        // Get real country statistics from button presses in last 24h
-        const realCountryStats: CountryStats[] = [];
-        
-        const { data: buttonPresses, error: buttonError } = await supabase
-          .from('button_holds')
-          .select('country')
-          .gte('started_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-          .not('country', 'is', null);
+        const yearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+        const countryRankingAllTime = await getCountryStats(yearAgo.toISOString());
 
-        console.log('Button presses country data:', { buttonPresses, buttonError });
-
-        if (buttonPresses && buttonPresses.length > 0) {
-          // Count button presses by country
-          const countryCounts: { [key: string]: number } = {};
-          
-          buttonPresses.forEach(press => {
-            const country = press.country || 'Unknown';
-            countryCounts[country] = (countryCounts[country] || 0) + 1;
-          });
-
-          // Convert to array and sort by count
-          Object.entries(countryCounts)
-            .sort(([,a], [,b]) => b - a)
-            .forEach(([country, count]) => {
-              realCountryStats.push({
-                country,
-                code: countryCodeMap[country] || 'XX',
-                count
-              });
-            });
-        }
-
-        setStats({
-          totalUsers: usersCount || 0,
-          buttonPresses24h: buttonPressesCount || 0,
-          maxSimultaneous24h: activeHolds || 0,
-          allTimeRecord: maxSimultaneous,
-          totalPolls: pollsCount || 0,
-          totalVotes: votesCount || 0
+        setAllTimeStats({
+          totalUsers: totalUsers || 0,
+          totalVotes: totalVotes || 0,
+          totalPolls: totalPolls || 0,
+          allTimeRecord,
+          mostBoostedPoll: mostBoostedPollData ? {
+            question: mostBoostedPollData.question,
+            pushCount: mostBoostedPollData.push_count || 0
+          } : null,
+          countryRankingAllTime
         });
 
-        console.log('Setting country stats:', realCountryStats);
-        setCountryStats(realCountryStats);
       } catch (error) {
         console.error('Error fetching stats:', error);
       } finally {
@@ -199,130 +288,177 @@ const Statistics = () => {
     };
   }, []);
 
-  const statsData = [
-    {
-      icon: Users,
-      title: 'Community Members',
-      value: loading ? '-' : stats.totalUsers.toLocaleString(),
-      color: 'from-blue-500 to-cyan-500'
-    },
-    {
-      icon: Clock,
-      title: 'Button Presses (24h)',
-      value: loading ? '-' : stats.buttonPresses24h.toLocaleString(),
-      color: 'from-cyan-500 to-blue-600'
-    },
-    {
-      icon: TrendingUp,
-      title: 'Max Simultaneous (24h)',
-      value: loading ? '-' : stats.maxSimultaneous24h.toLocaleString(),
-      color: 'from-cyan-600 to-blue-500'
-    },
-    {
-      icon: Trophy,
-      title: 'All-Time Record',
-      value: loading ? '-' : stats.allTimeRecord.toLocaleString(),
-      color: 'from-blue-600 to-indigo-500'
-    },
-    {
-      icon: BarChart3,
-      title: 'Total Polls',
-      value: loading ? '-' : stats.totalPolls.toLocaleString(),
-      color: 'from-indigo-500 to-purple-500'
-    },
-    {
-      icon: Globe,
-      title: 'Total Votes',
-      value: loading ? '-' : stats.totalVotes.toLocaleString(),
-      color: 'from-purple-500 to-pink-500'
-    }
-  ];
+  const StatCard = ({ icon: Icon, title, value, color }: {
+    icon: React.ComponentType<any>;
+    title: string;
+    value: string | number;
+    color: string;
+  }) => (
+    <div className="bg-card/40 backdrop-blur-sm rounded-lg p-4 border border-border">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded-lg bg-gradient-to-r ${color}`}>
+            <Icon size={20} className="text-background" />
+          </div>
+          <h3 className="text-muted-foreground font-medium">{title}</h3>
+        </div>
+        <div className="text-2xl font-bold text-foreground">
+          {loading ? '-' : typeof value === 'number' ? value.toLocaleString() : value}
+        </div>
+      </div>
+    </div>
+  );
+
+  const CountryRanking = ({ countries, title }: { countries: CountryStats[]; title: string }) => (
+    <div className="bg-card/40 backdrop-blur-sm rounded-lg p-4 border border-border">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="p-2 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500">
+          <Globe size={20} className="text-background" />
+        </div>
+        <h3 className="text-muted-foreground font-medium">{title}</h3>
+      </div>
+      
+      {loading ? (
+        <div className="text-center py-4 text-muted-foreground">Loading...</div>
+      ) : countries.length > 0 ? (
+        <div className="space-y-3 max-h-64 overflow-y-auto">
+          {countries.slice(0, 5).map((country, index) => (
+            <div key={country.country} className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-r from-primary to-primary/70 flex items-center justify-center text-xs text-primary-foreground font-bold">
+                  {index + 1}
+                </div>
+                <div className="flex items-center gap-2">
+                  {country.code !== 'XX' && (
+                    <img 
+                      src={`https://flagcdn.com/w20/${country.code.toLowerCase()}.png`}
+                      alt={`${country.country} flag`}
+                      className="w-5 h-auto rounded"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  )}
+                  <span className="text-foreground">{country.country}</span>
+                </div>
+              </div>
+              <span className="text-primary font-medium">{country.count}</span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-4 text-muted-foreground">No data available</div>
+      )}
+    </div>
+  );
 
   return (
     <div className="flex-1 overflow-y-auto px-6 py-6">
       <div className="max-w-md mx-auto space-y-6">
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-blue-400 mb-2">Community Statistics</h2>
-          <p className="text-blue-200/70">Data from our global Push It! community</p>
+          <h2 className="text-2xl font-bold text-primary mb-2">Community Statistics</h2>
+          <p className="text-muted-foreground">Data from our global Push It! community</p>
         </div>
 
-        <div className="space-y-4">
-          {statsData.map((stat, index) => {
-            const Icon = stat.icon;
-            return (
-              <div 
-                key={index}
-                className="bg-black/40 backdrop-blur-sm rounded-2xl p-4 border border-blue-500/20"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg bg-gradient-to-r ${stat.color}`}>
-                      <Icon size={20} className="text-black" />
-                    </div>
-                    <div>
-                      <h3 className="text-blue-200 font-medium">{stat.title}</h3>
-                    </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="daily">Daily</TabsTrigger>
+            <TabsTrigger value="monthly">Monthly</TabsTrigger>
+            <TabsTrigger value="halloffame">Hall of Fame</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="daily" className="space-y-4 mt-6">
+            <StatCard
+              icon={Calendar}
+              title="Polls Created (24h)"
+              value={dailyStats.pollsCreated24h}
+              color="from-blue-500 to-cyan-500"
+            />
+            <StatCard
+              icon={Vote}
+              title="Votes Cast (24h)"
+              value={dailyStats.votes24h}
+              color="from-cyan-500 to-blue-600"
+            />
+            <StatCard
+              icon={Users}
+              title="Max Simultaneous (24h)"
+              value={dailyStats.maxSimultaneous24h}
+              color="from-cyan-600 to-blue-500"
+            />
+            <StatCard
+              icon={Activity}
+              title="Active Polls"
+              value={dailyStats.activePolls}
+              color="from-green-500 to-emerald-500"
+            />
+            <CountryRanking countries={dailyStats.countryRanking} title="Countries (24h)" />
+          </TabsContent>
+
+          <TabsContent value="monthly" className="space-y-4 mt-6">
+            <StatCard
+              icon={Calendar}
+              title="Polls Created (30d)"
+              value={monthlyStats.pollsCreatedMonth}
+              color="from-purple-500 to-pink-500"
+            />
+            <StatCard
+              icon={Vote}
+              title="Votes Cast (30d)"
+              value={monthlyStats.votesMonth}
+              color="from-pink-500 to-rose-500"
+            />
+            <StatCard
+              icon={Users}
+              title="Max Simultaneous (30d)"
+              value={monthlyStats.maxSimultaneousMonth}
+              color="from-rose-500 to-orange-500"
+            />
+            <CountryRanking countries={monthlyStats.countryRankingMonth} title="Countries (30d)" />
+          </TabsContent>
+
+          <TabsContent value="halloffame" className="space-y-4 mt-6">
+            <StatCard
+              icon={Trophy}
+              title="All-Time Record"
+              value={allTimeStats.allTimeRecord}
+              color="from-yellow-500 to-orange-500"
+            />
+            <StatCard
+              icon={Users}
+              title="Total Users"
+              value={allTimeStats.totalUsers}
+              color="from-blue-500 to-cyan-500"
+            />
+            <StatCard
+              icon={Vote}
+              title="Total Votes"
+              value={allTimeStats.totalVotes}
+              color="from-indigo-500 to-purple-500"
+            />
+            <StatCard
+              icon={BarChart3}
+              title="Total Polls"
+              value={allTimeStats.totalPolls}
+              color="from-purple-500 to-pink-500"
+            />
+            
+            {allTimeStats.mostBoostedPoll && (
+              <div className="bg-card/40 backdrop-blur-sm rounded-lg p-4 border border-border">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 rounded-lg bg-gradient-to-r from-yellow-500 to-orange-500">
+                    <Award size={20} className="text-background" />
                   </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-blue-400">{stat.value}</div>
-                  </div>
+                  <h3 className="text-muted-foreground font-medium">Most Boosted Poll</h3>
                 </div>
+                <p className="text-foreground text-sm mb-2">{allTimeStats.mostBoostedPoll.question}</p>
+                <p className="text-primary font-bold">{allTimeStats.mostBoostedPoll.pushCount} boosts</p>
               </div>
-            );
-          })}
-        </div>
-
-        {/* Country Statistics Section with Real Data */}
-        <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-4 border border-blue-500/20">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500">
-              <Globe size={20} className="text-black" />
-            </div>
-            <h3 className="text-blue-200 font-medium">Top Countries</h3>
-          </div>
-          
-          {loading ? (
-            <div className="text-center py-4">
-              <div className="text-blue-300/70">Loading country data...</div>
-            </div>
-          ) : countryStats.length > 0 ? (
-            <div className="space-y-3">
-              {countryStats.slice(0, 8).map((country, index) => (
-                <div key={country.country} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 rounded-full bg-gradient-to-r from-blue-400 to-cyan-400 flex items-center justify-center text-xs text-black font-bold">
-                      {index + 1}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {country.code !== 'XX' && (
-                        <img 
-                          src={`https://flagcdn.com/w20/${country.code.toLowerCase()}.png`}
-                          alt={`${country.country} flag`}
-                          className="w-5 h-auto rounded"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                          }}
-                        />
-                      )}
-                      <span className="text-blue-200">{country.country}</span>
-                    </div>
-                  </div>
-                  <span className="text-blue-400 font-medium">{country.count}</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-4">
-              <div className="text-blue-300/70">No country data available yet</div>
-            </div>
-          )}
-        </div>
-
-        {loading && (
-          <div className="text-center py-4">
-            <div className="text-blue-300/70">Loading statistics...</div>
-          </div>
-        )}
+            )}
+            
+            <CountryRanking countries={allTimeStats.countryRankingAllTime} title="Countries (All-Time)" />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
