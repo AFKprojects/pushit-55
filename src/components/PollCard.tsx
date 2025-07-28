@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Rocket, BookmarkPlus, EyeOff, Clock, User, BarChart3 } from "lucide-react";
 import { usePollModal } from "@/hooks/usePollModal";
+import { useUserModal } from "@/hooks/useUserModal";
 
 interface PollOption {
   id: string;
@@ -63,6 +64,7 @@ const PollCard = ({
   isEditingVote = false
 }: PollCardProps) => {
   const { openModal } = usePollModal();
+  const { openModal: openUserModal } = useUserModal();
   const [timeLeft, setTimeLeft] = useState(poll.timeLeft || "");
   const [isEditing, setIsEditing] = useState(false);
 
@@ -119,7 +121,15 @@ const PollCard = ({
             {poll.question}
           </h3>
           <p className="text-xs text-orange-300/60 mb-1">
-            ID: {poll.id.slice(0, 8)} | by {poll.creator_username}
+            ID: {poll.id.slice(0, 8)} | by <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                openUserModal(poll.creator_username);
+              }}
+              className="text-blue-300 hover:text-blue-200 underline"
+            >
+              {poll.creator_username}
+            </button>
           </p>
         </div>
         <div className="flex items-center gap-2">

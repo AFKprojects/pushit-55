@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { X, Share2, Clock, Users, Rocket, BookmarkPlus, EyeOff, User } from "lucide-react";
 import { usePushSystem } from "@/hooks/usePushSystem";
 import { usePollModal } from "@/hooks/usePollModal";
+import { useUserModal } from "@/hooks/useUserModal";
 
 interface PollOption {
   id: string;
@@ -35,6 +36,7 @@ const PollModal = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const { pushPoll } = usePushSystem();
+  const { openModal: openUserModal } = useUserModal();
 
   const [poll, setPoll] = useState<Poll | null>(null);
   const [loading, setLoading] = useState(false);
@@ -432,7 +434,12 @@ const PollModal = () => {
                 <div className="flex-1">
                   <h1 className="text-2xl font-bold text-orange-200 mb-2">{poll.question}</h1>
                   <p className="text-xs text-orange-300/60 mb-1">
-                    ID: {poll.id.slice(0, 8)} | by {poll.creator_username}
+                    ID: {poll.id.slice(0, 8)} | by <button 
+                      onClick={() => openUserModal(poll.creator_username)}
+                      className="text-blue-300 hover:text-blue-200 underline"
+                    >
+                      {poll.creator_username}
+                    </button>
                   </p>
                 </div>
                 <div className="flex items-center gap-2">

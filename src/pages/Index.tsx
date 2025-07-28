@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { LogIn } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import PollModal from '@/components/PollModal';
+import UserModal from '@/components/UserModal';
 import { usePollModal } from '@/hooks/usePollModal';
 
 const Index = () => {
@@ -137,6 +138,7 @@ const Index = () => {
         
         <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
         <PollModal />
+        <UserModal />
       </div>
       
       <style>{`

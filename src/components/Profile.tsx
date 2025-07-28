@@ -1,5 +1,5 @@
 
-import { User, Settings, LogIn, Heart, BarChart3, LogOut } from 'lucide-react';
+import { User, Settings, LogIn, Heart, BarChart3, LogOut, Award, Vote, Rocket } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -54,6 +54,18 @@ const Profile = () => {
         </div>
 
         <div className="space-y-4">
+          {/* Badges Section */}
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
+            <div className="flex items-center gap-3 mb-3">
+              <Award size={20} className="text-yellow-400" />
+              <span className="text-white font-medium">Your badges!</span>
+            </div>
+            <div className="text-center py-4">
+              <p className="text-white/60 text-sm">No badges earned yet</p>
+              <p className="text-white/40 text-xs mt-1">Complete actions to earn badges</p>
+            </div>
+          </div>
+
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
             <div className="flex items-center gap-3 mb-3">
               <BarChart3 size={20} className="text-white" />
@@ -66,7 +78,15 @@ const Profile = () => {
               </div>
               <div>
                 <div className="text-2xl font-bold text-white">-</div>
-                <div className="text-white/60 text-sm">Votes cast</div>
+                <div className="text-white/60 text-sm">Voted</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-white">-</div>
+                <div className="text-white/60 text-sm">Boosts received</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-white">-</div>
+                <div className="text-white/60 text-sm">Votes received</div>
               </div>
             </div>
           </div>

@@ -1,12 +1,16 @@
 
 import { useState, useEffect } from 'react';
-import { Users, BarChart3, Clock, Vote, Archive, BookmarkPlus, Eye, TrendingUp, User, Settings, ChevronDown, ChevronRight, LogIn, LogOut } from 'lucide-react';
+import { Users, BarChart3, Clock, Vote, Archive, BookmarkPlus, Eye, TrendingUp, User, Settings, ChevronDown, ChevronRight, LogIn, LogOut, Rocket, Search, UserPlus, Award, Medal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { usePollManagement } from '@/hooks/usePollManagement';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
+import { usePollModal } from '@/hooks/usePollModal';
+import { useUserModal } from '@/hooks/useUserModal';
 
 interface Poll {
   id: string;
@@ -28,6 +32,10 @@ interface UserStats {
   createdPolls: number;
   totalVotes: number;
   observers: number;
+  following: number;
+  votesReceived: number;
+  boostsReceived: number;
+  votesCast: number;
 }
 
 const MyApp = () => {
@@ -40,11 +48,15 @@ const MyApp = () => {
   const [createdPolls, setCreatedPolls] = useState<Poll[]>([]);
   const [votedPolls, setVotedPolls] = useState<Poll[]>([]);
   const [savedPolls, setSavedPolls] = useState<Poll[]>([]);
-  const [userStats, setUserStats] = useState<UserStats>({ createdPolls: 0, totalVotes: 0, observers: 0 });
+  const [userStats, setUserStats] = useState<UserStats>({ createdPolls: 0, totalVotes: 0, observers: 0, following: 0, votesReceived: 0, boostsReceived: 0, votesCast: 0 });
   const [loading, setLoading] = useState(true);
+  const [searchUsername, setSearchUsername] = useState('');
   
   const { user, signOut } = useAuth();
   const { managePollsCleanup, isManaging } = usePollManagement();
+  const { openModal } = usePollModal();
+  const { openModal: openUserModal } = useUserModal();
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -142,10 +154,16 @@ const MyApp = () => {
 
       // Calculate stats
       const totalVotesReceived = (created || []).reduce((sum, poll) => sum + poll.total_votes, 0);
+      const totalVotesCast = voted?.length || 0;
+      
       setUserStats({
         createdPolls: created?.length || 0,
         totalVotes: totalVotesReceived,
-        observers: Math.floor(Math.random() * 50) + 10 // Placeholder
+        observers: Math.floor(Math.random() * 50) + 10, // Placeholder
+        following: Math.floor(Math.random() * 25) + 5, // Placeholder
+        votesReceived: totalVotesReceived,
+        boostsReceived: Math.floor(Math.random() * 100) + 20, // Placeholder
+        votesCast: totalVotesCast
       });
 
     } catch (error) {
@@ -255,7 +273,11 @@ const MyApp = () => {
             {liveExpanded && (
               <div className="px-4 pb-4 space-y-3">
                 {livePolls.map((poll) => (
-                  <div key={poll.id} className="bg-black/20 rounded-lg p-4">
+                     <div 
+                    key={poll.id} 
+                    className="bg-black/20 rounded-lg p-4 cursor-pointer hover:bg-black/30 transition-colors"
+                    onClick={() => openModal(poll.id)}
+                  >
                     <h4 className="text-blue-200 font-medium mb-2">{poll.question}</h4>
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-blue-300/70">{poll.total_votes} votes</span>
@@ -291,7 +313,11 @@ const MyApp = () => {
             {archiveExpanded && (
               <div className="px-4 pb-4 space-y-3">
                 {archivePolls.map((poll) => (
-                  <div key={poll.id} className="bg-black/20 rounded-lg p-4">
+                  <div 
+                    key={poll.id} 
+                    className="bg-black/20 rounded-lg p-4 cursor-pointer hover:bg-black/30 transition-colors"
+                    onClick={() => openModal(poll.id)}
+                  >
                     <h4 className="text-blue-200 font-medium mb-2">{poll.question}</h4>
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-blue-300/70">{poll.total_votes} votes</span>
@@ -315,53 +341,14 @@ const MyApp = () => {
     const renderVotedPolls = () => (
       <div className="space-y-3">
         {votedPolls.map((poll) => (
-          <div key={poll.id} className="bg-black/20 rounded-lg p-4">
+          <div 
+            key={poll.id} 
+            className="bg-black/20 rounded-lg p-4 cursor-pointer hover:bg-black/30 transition-colors"
+            onClick={() => openModal(poll.id)}
+          >
             <div className="flex justify-between items-start mb-2">
               <h4 className="text-blue-200 font-medium flex-1">{poll.question}</h4>
-              <button
-                onClick={() => setExpandedPoll(expandedPoll === poll.id ? null : poll.id)}
-                className="text-blue-400 hover:text-blue-300 ml-2"
-              >
-                {expandedPoll === poll.id ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-              </button>
             </div>
-            
-            {expandedPoll === poll.id && poll.options && (
-              <div className="mt-4 space-y-2">
-                {poll.options.map((option) => {
-                  const isUserVote = poll.userVote === option.id;
-                  return (
-                    <div
-                      key={option.id}
-                      className={`p-3 rounded-lg border transition-colors cursor-pointer ${
-                        isUserVote 
-                          ? 'bg-blue-500/20 border-blue-400' 
-                          : 'bg-black/20 border-blue-500/20 hover:bg-blue-500/10'
-                      }`}
-                      onClick={() => changeVote(poll.id, option.id)}
-                    >
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-blue-200">{option.option_text}</span>
-                        <span className="text-blue-300/80 text-sm">{option.percentage}%</span>
-                      </div>
-                      <div className="bg-black/40 rounded-full h-2">
-                        <div
-                          className="bg-gradient-to-r from-blue-400 to-cyan-500 h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${option.percentage}%` }}
-                        />
-                      </div>
-                      {isUserVote && (
-                        <div className="text-xs text-blue-400 mt-1">Your vote</div>
-                      )}
-                    </div>
-                  );
-                })}
-                <div className="text-xs text-blue-300/70 mt-2">
-                  Click any option to change your vote (one-time only)
-                </div>
-              </div>
-            )}
-            
             <div className="flex justify-between items-center text-sm mt-2">
               <span className="text-blue-300/70">{poll.total_votes} total votes</span>
               <span className="text-green-400 flex items-center gap-1">
@@ -380,7 +367,11 @@ const MyApp = () => {
     const renderToVotePolls = () => (
       <div className="space-y-3">
         {savedPolls.map((poll) => (
-          <div key={poll.id} className="bg-black/20 rounded-lg p-4">
+          <div 
+            key={poll.id} 
+            className="bg-black/20 rounded-lg p-4 cursor-pointer hover:bg-black/30 transition-colors"
+            onClick={() => openModal(poll.id)}
+          >
             <h4 className="text-blue-200 font-medium mb-2">{poll.question}</h4>
             <div className="flex justify-between items-center text-sm">
               <span className="text-blue-300/70">{poll.total_votes} votes</span>
@@ -446,6 +437,13 @@ const MyApp = () => {
     );
   };
 
+  const handleUserSearch = () => {
+    if (searchUsername.trim()) {
+      openUserModal(searchUsername.trim());
+      setSearchUsername('');
+    }
+  };
+
   const renderCommunity = () => (
     <div className="space-y-6">
       <div className="text-center mb-6">
@@ -453,16 +451,67 @@ const MyApp = () => {
         <p className="text-blue-200/70">See your impact and connections</p>
       </div>
 
+      {/* User Search */}
+      <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-4 border border-blue-500/20">
+        <h3 className="text-lg font-semibold text-blue-200 mb-3 flex items-center gap-2">
+          <Search size={20} />
+          Find Users
+        </h3>
+        <div className="flex gap-2">
+          <Input
+            placeholder="Enter username..."
+            value={searchUsername}
+            onChange={(e) => setSearchUsername(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleUserSearch()}
+            className="bg-black/20 border-blue-500/30 text-blue-200 placeholder:text-blue-300/50"
+          />
+          <Button
+            onClick={handleUserSearch}
+            className="bg-blue-500/20 border-blue-500/30 text-blue-300 hover:bg-blue-500/30"
+            variant="outline"
+          >
+            <Search size={16} />
+          </Button>
+        </div>
+      </div>
+
+      {/* Community Stats */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-4 border border-blue-500/20 text-center">
+        <div 
+          className="bg-black/40 backdrop-blur-sm rounded-2xl p-4 border border-blue-500/20 text-center cursor-pointer hover:bg-black/50 transition-colors"
+          onClick={() => {
+            toast({
+              title: "Coming Soon",
+              description: "Followers list will be available soon!",
+            });
+          }}
+        >
           <Eye size={24} className="text-blue-400 mx-auto mb-2" />
           <div className="text-2xl font-bold text-blue-400">{userStats.observers}</div>
           <div className="text-blue-300/60 text-sm">Followers</div>
         </div>
+        <div 
+          className="bg-black/40 backdrop-blur-sm rounded-2xl p-4 border border-blue-500/20 text-center cursor-pointer hover:bg-black/50 transition-colors"
+          onClick={() => {
+            toast({
+              title: "Coming Soon",
+              description: "Following list will be available soon!",
+            });
+          }}
+        >
+          <UserPlus size={24} className="text-green-400 mx-auto mb-2" />
+          <div className="text-2xl font-bold text-blue-400">{userStats.following}</div>
+          <div className="text-blue-300/60 text-sm">Following</div>
+        </div>
         <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-4 border border-blue-500/20 text-center">
           <Vote size={24} className="text-cyan-400 mx-auto mb-2" />
-          <div className="text-2xl font-bold text-blue-400">{userStats.totalVotes}</div>
+          <div className="text-2xl font-bold text-blue-400">{userStats.votesReceived}</div>
           <div className="text-blue-300/60 text-sm">Votes received</div>
+        </div>
+        <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-4 border border-blue-500/20 text-center">
+          <Rocket size={24} className="text-orange-400 mx-auto mb-2" />
+          <div className="text-2xl font-bold text-blue-400">{userStats.boostsReceived}</div>
+          <div className="text-blue-300/60 text-sm">Boosts received</div>
         </div>
       </div>
     </div>
