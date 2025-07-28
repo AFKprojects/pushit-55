@@ -294,15 +294,15 @@ const Statistics = () => {
     value: string | number;
     color: string;
   }) => (
-    <div className="bg-card/40 backdrop-blur-sm rounded-lg p-4 border border-border">
-      <div className="flex items-center justify-between">
+    <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-4 border border-blue-500/20">
+      <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-3">
           <div className={`p-2 rounded-lg bg-gradient-to-r ${color}`}>
-            <Icon size={20} className="text-background" />
+            <Icon size={20} className="text-black" />
           </div>
-          <h3 className="text-muted-foreground font-medium">{title}</h3>
+          <h3 className="text-blue-200 font-medium">{title}</h3>
         </div>
-        <div className="text-2xl font-bold text-foreground">
+        <div className="text-2xl font-bold text-blue-400">
           {loading ? '-' : typeof value === 'number' ? value.toLocaleString() : value}
         </div>
       </div>
@@ -310,22 +310,22 @@ const Statistics = () => {
   );
 
   const CountryRanking = ({ countries, title }: { countries: CountryStats[]; title: string }) => (
-    <div className="bg-card/40 backdrop-blur-sm rounded-lg p-4 border border-border">
+    <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-4 border border-blue-500/20">
       <div className="flex items-center gap-3 mb-4">
         <div className="p-2 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500">
-          <Globe size={20} className="text-background" />
+          <Globe size={20} className="text-black" />
         </div>
-        <h3 className="text-muted-foreground font-medium">{title}</h3>
+        <h3 className="text-blue-200 font-medium">{title}</h3>
       </div>
       
       {loading ? (
-        <div className="text-center py-4 text-muted-foreground">Loading...</div>
+        <div className="text-center py-4 text-blue-300/70">Loading...</div>
       ) : countries.length > 0 ? (
         <div className="space-y-3 max-h-64 overflow-y-auto">
           {countries.slice(0, 5).map((country, index) => (
             <div key={country.country} className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-6 h-6 rounded-full bg-gradient-to-r from-primary to-primary/70 flex items-center justify-center text-xs text-primary-foreground font-bold">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-r from-blue-400 to-cyan-400 flex items-center justify-center text-xs text-black font-bold">
                   {index + 1}
                 </div>
                 <div className="flex items-center gap-2">
@@ -339,15 +339,15 @@ const Statistics = () => {
                       }}
                     />
                   )}
-                  <span className="text-foreground">{country.country}</span>
+                  <span className="text-blue-200">{country.country}</span>
                 </div>
               </div>
-              <span className="text-primary font-medium">{country.count}</span>
+              <span className="text-blue-400 font-medium">{country.count}</span>
             </div>
           ))}
         </div>
       ) : (
-        <div className="text-center py-4 text-muted-foreground">No data available</div>
+        <div className="text-center py-4 text-blue-300/70">No data available</div>
       )}
     </div>
   );
@@ -356,8 +356,8 @@ const Statistics = () => {
     <div className="flex-1 overflow-y-auto px-6 py-6">
       <div className="max-w-md mx-auto space-y-6">
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-primary mb-2">Community Statistics</h2>
-          <p className="text-muted-foreground">Data from our global Push It! community</p>
+          <h2 className="text-2xl font-bold text-blue-400 mb-2">Community Statistics</h2>
+          <p className="text-blue-200/70">Data from our global Push It! community</p>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -444,15 +444,15 @@ const Statistics = () => {
             />
             
             {allTimeStats.mostBoostedPoll && (
-              <div className="bg-card/40 backdrop-blur-sm rounded-lg p-4 border border-border">
+              <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-4 border border-blue-500/20">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="p-2 rounded-lg bg-gradient-to-r from-yellow-500 to-orange-500">
-                    <Award size={20} className="text-background" />
+                    <Award size={20} className="text-black" />
                   </div>
-                  <h3 className="text-muted-foreground font-medium">Most Boosted Poll</h3>
+                  <h3 className="text-blue-200 font-medium">Most Boosted Poll</h3>
                 </div>
-                <p className="text-foreground text-sm mb-2">{allTimeStats.mostBoostedPoll.question}</p>
-                <p className="text-primary font-bold">{allTimeStats.mostBoostedPoll.pushCount} boosts</p>
+                <p className="text-blue-200 text-sm mb-2">{allTimeStats.mostBoostedPoll.question}</p>
+                <p className="text-blue-400 font-bold">{allTimeStats.mostBoostedPoll.pushCount} boosts</p>
               </div>
             )}
             
