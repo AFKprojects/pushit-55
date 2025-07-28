@@ -67,6 +67,7 @@ const PollView = () => {
 
     try {
       setLoading(true);
+      console.log("Fetching poll with ID:", id);
 
       // Fetch poll data
       const { data: pollData, error: pollError } = await supabase
@@ -82,8 +83,11 @@ const PollView = () => {
         .eq("id", id)
         .single();
 
+      console.log("Poll query result:", { pollData, pollError });
+
       if (pollError) {
         console.error("Error fetching poll:", pollError);
+        console.log("Attempted poll ID:", id);
         toast({
           title: "Error",
           description: "Poll not found or has been deleted.",
