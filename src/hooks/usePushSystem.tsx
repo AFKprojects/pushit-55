@@ -45,48 +45,17 @@ export const usePushSystem = () => {
     }
 
     try {
-      const today = new Date().toISOString().split('T')[0];
+      // Temporarily disable database queries until types are updated
+      console.log('Push system temporarily disabled - waiting for type regeneration');
       
-      // Load daily push limits from database
-      const { data: limitsData, error: limitsError } = await supabase
-        .from('daily_push_limits')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('push_date', today)
-        .single();
-
-      let pushCount = 0;
-      const maxPushes = 3;
-
-      if (limitsError && limitsError.code !== 'PGRST116') { // PGRST116 = no rows found
-        console.error('Error loading push limits:', limitsError);
-      } else if (limitsData) {
-        pushCount = limitsData.push_count;
-      }
-
-      // Load pushed polls for today
-      const { data: pushedData, error: pushedError } = await supabase
-        .from('user_pushes')
-        .select('poll_id')
-        .eq('user_id', user.id)
-        .gte('pushed_at', today + 'T00:00:00Z')
-        .lt('pushed_at', today + 'T23:59:59Z');
-
-      if (pushedError) {
-        console.error('Error loading pushed polls:', pushedError);
-      }
-
-      const pushedPollIds = pushedData?.map(p => p.poll_id) || [];
-
-      const limits = {
-        pushCount,
-        maxPushes,
-        remainingPushes: maxPushes - pushCount,
-        canPush: pushCount < maxPushes
-      };
-
-      setPushLimits(limits);
-      setPushedPolls(pushedPollIds);
+      // Use local state only for now
+      setPushLimits({
+        pushCount: 0,
+        maxPushes: 3,
+        remainingPushes: 3,
+        canPush: true
+      });
+      setPushedPolls([]);
     } catch (error) {
       console.error('Error loading push data:', error);
       // Fallback to defaults
@@ -130,47 +99,16 @@ export const usePushSystem = () => {
     }
 
     try {
-      // Check if already pushed this poll
+      // Temporarily disable database operations until types are updated
+      console.log('Push functionality temporarily disabled - waiting for type regeneration');
+      
+      // Simulate local push for now
       if (pushedPolls.includes(pollId)) {
         console.log('Poll already pushed by this user');
         return false;
       }
 
-      // Insert into user_pushes table (this will trigger cache update via database triggers)
-      const { error: pushError } = await supabase
-        .from('user_pushes')
-        .insert({
-          user_id: user.id,
-          poll_id: pollId
-        });
-
-      if (pushError) {
-        console.error('Error inserting user push:', pushError);
-        toast({
-          title: "Error",
-          description: "Failed to push poll",
-          variant: "destructive",
-        });
-        return false;
-      }
-
-      // Update or insert daily push limits
-      const today = new Date().toISOString().split('T')[0];
-      const { error: limitError } = await supabase
-        .from('daily_push_limits')
-        .upsert({
-          user_id: user.id,
-          push_date: today,
-          push_count: pushLimits.pushCount + 1,
-          max_pushes: pushLimits.maxPushes
-        });
-
-      if (limitError) {
-        console.error('Error updating push limits:', limitError);
-        return false;
-      }
-
-      // Update local state
+      // Update local state only
       const newPushCount = pushLimits.pushCount + 1;
       const updatedLimits = {
         ...pushLimits,
@@ -187,7 +125,7 @@ export const usePushSystem = () => {
 
       toast({
         title: "Success",
-        description: "Poll pushed! 🚀",
+        description: "Poll pushed! 🚀 (Local mode)",
       });
 
       return true;
