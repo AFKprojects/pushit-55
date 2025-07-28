@@ -369,6 +369,12 @@ const Statistics = () => {
 
           <TabsContent value="daily" className="space-y-4 mt-6">
             <StatCard
+              icon={Users}
+              title="Max Simultaneous (24h)"
+              value={dailyStats.maxSimultaneous24h}
+              color="from-cyan-600 to-blue-500"
+            />
+            <StatCard
               icon={Calendar}
               title="Polls Created (24h)"
               value={dailyStats.pollsCreated24h}
@@ -380,41 +386,29 @@ const Statistics = () => {
               value={dailyStats.votes24h}
               color="from-cyan-500 to-blue-600"
             />
-            <StatCard
-              icon={Users}
-              title="Max Simultaneous (24h)"
-              value={dailyStats.maxSimultaneous24h}
-              color="from-cyan-600 to-blue-500"
-            />
-            <StatCard
-              icon={Activity}
-              title="Active Polls"
-              value={dailyStats.activePolls}
-              color="from-green-500 to-emerald-500"
-            />
             <CountryRanking countries={dailyStats.countryRanking} title="Countries (24h)" />
           </TabsContent>
 
           <TabsContent value="monthly" className="space-y-4 mt-6">
             <StatCard
+              icon={Users}
+              title="Max Simultaneous (mo)"
+              value={monthlyStats.maxSimultaneousMonth}
+              color="from-rose-500 to-orange-500"
+            />
+            <StatCard
               icon={Calendar}
-              title="Polls Created (30d)"
+              title="Polls Created (mo)"
               value={monthlyStats.pollsCreatedMonth}
               color="from-purple-500 to-pink-500"
             />
             <StatCard
               icon={Vote}
-              title="Votes Cast (30d)"
+              title="Votes Cast (mo)"
               value={monthlyStats.votesMonth}
               color="from-pink-500 to-rose-500"
             />
-            <StatCard
-              icon={Users}
-              title="Max Simultaneous (30d)"
-              value={monthlyStats.maxSimultaneousMonth}
-              color="from-rose-500 to-orange-500"
-            />
-            <CountryRanking countries={monthlyStats.countryRankingMonth} title="Countries (30d)" />
+            <CountryRanking countries={monthlyStats.countryRankingMonth} title="Countries (mo)" />
           </TabsContent>
 
           <TabsContent value="halloffame" className="space-y-4 mt-6">
@@ -423,24 +417,6 @@ const Statistics = () => {
               title="All-Time Record"
               value={allTimeStats.allTimeRecord}
               color="from-yellow-500 to-orange-500"
-            />
-            <StatCard
-              icon={Users}
-              title="Total Users"
-              value={allTimeStats.totalUsers}
-              color="from-blue-500 to-cyan-500"
-            />
-            <StatCard
-              icon={Vote}
-              title="Total Votes"
-              value={allTimeStats.totalVotes}
-              color="from-indigo-500 to-purple-500"
-            />
-            <StatCard
-              icon={BarChart3}
-              title="Total Polls"
-              value={allTimeStats.totalPolls}
-              color="from-purple-500 to-pink-500"
             />
             
             {allTimeStats.mostBoostedPoll && (
@@ -455,6 +431,25 @@ const Statistics = () => {
                 <p className="text-blue-400 font-bold">{allTimeStats.mostBoostedPoll.pushCount} boosts</p>
               </div>
             )}
+            
+            <StatCard
+              icon={Users}
+              title="Total Users"
+              value={allTimeStats.totalUsers}
+              color="from-blue-500 to-cyan-500"
+            />
+            <StatCard
+              icon={BarChart3}
+              title="Total Polls"
+              value={allTimeStats.totalPolls}
+              color="from-purple-500 to-pink-500"
+            />
+            <StatCard
+              icon={Vote}
+              title="Total Votes"
+              value={allTimeStats.totalVotes}
+              color="from-indigo-500 to-purple-500"
+            />
             
             <CountryRanking countries={allTimeStats.countryRankingAllTime} title="Countries (All-Time)" />
           </TabsContent>
