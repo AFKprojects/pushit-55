@@ -201,6 +201,10 @@ const Polls = ({ onNavigateToCreate }: PollsProps) => {
           </TabsList>
 
           <TabsContent value="live">
+            {/* Search by ID for Live polls */}
+            <div className="mb-6">
+              <ArchiveSearch />
+            </div>
             {renderPollsList(polls)}
             
             {polls.length === 0 && (

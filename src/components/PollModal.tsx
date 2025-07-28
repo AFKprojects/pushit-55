@@ -522,7 +522,7 @@ const PollModal = () => {
                   {poll.push_count > 0 && (
                     <div className="flex items-center">
                       <Rocket size={16} className="mr-1" />
-                      {poll.push_count} pushes
+                      {poll.push_count} boosts
                     </div>
                   )}
                 </div>
@@ -546,7 +546,7 @@ const PollModal = () => {
                         className="bg-orange-500 text-white hover:bg-orange-600"
                       >
                         <Rocket size={16} className="mr-1" />
-                        Push
+                        Boost
                       </Button>
                     )}
                     {!savedPolls.includes(poll.id) && (
