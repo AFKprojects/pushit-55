@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, Share2, Clock, Users, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Share2, Clock, Users, AlertTriangle, Rocket, BookmarkPlus, EyeOff, User, BarChart3 } from "lucide-react";
 import HoldButton from "@/components/HoldButton";
 import { usePushSystem } from "@/hooks/usePushSystem";
 
@@ -44,6 +44,7 @@ const PollView = () => {
   const [voting, setVoting] = useState(false);
   const [votingOption, setVotingOption] = useState<string | null>(null);
   const [countdownSeconds, setCountdownSeconds] = useState(3);
+  const [savedPolls, setSavedPolls] = useState<string[]>([]);
 
   const calculateTimeLeft = (expiresAt: string): string => {
     const now = new Date();
@@ -285,8 +286,80 @@ const PollView = () => {
     }
   };
 
+  const handleSavePoll = async () => {
+    if (!poll || !user) return;
+    
+    try {
+      const { error } = await supabase
+        .from("saved_polls")
+        .insert({
+          user_id: user.id,
+          poll_id: poll.id
+        });
+      
+      if (error) throw error;
+      
+      setSavedPolls(prev => [...prev, poll.id]);
+      toast({
+        title: "Poll Saved!",
+        description: "Poll has been added to your saved polls.",
+      });
+    } catch (error) {
+      console.error("Error saving poll:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save poll.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleHidePoll = async () => {
+    if (!poll || !user) return;
+    
+    try {
+      const { error } = await supabase
+        .from("hidden_polls")
+        .insert({
+          user_id: user.id,
+          poll_id: poll.id
+        });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Poll Hidden",
+        description: "This poll has been hidden from your feed.",
+      });
+      navigate("/");
+    } catch (error) {
+      console.error("Error hiding poll:", error);
+      toast({
+        title: "Error",
+        description: "Failed to hide poll.",
+        variant: "destructive",
+      });
+    }
+  };
+
   useEffect(() => {
     fetchPoll();
+    
+    // Load saved polls
+    if (user) {
+      const loadSavedPolls = async () => {
+        const { data } = await supabase
+          .from("saved_polls")
+          .select("poll_id")
+          .eq("user_id", user.id);
+        
+        if (data) {
+          setSavedPolls(data.map(item => item.poll_id));
+        }
+      };
+      
+      loadSavedPolls();
+    }
   }, [id, user]);
 
   useEffect(() => {
@@ -330,9 +403,9 @@ const PollView = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-indigo-900">
-      <div className="container mx-auto px-4 py-8 max-w-2xl">
+      <div className="container mx-auto px-4 py-8 max-w-2xl pb-24">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center mb-6">
           <Button
             variant="ghost"
             onClick={() => navigate("/")}
@@ -341,109 +414,85 @@ const PollView = () => {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
           </Button>
-          <Button
-            variant="outline"
-            onClick={handleShare}
-            className="text-white border-white/20 hover:bg-white/10"
-          >
-            <Share2 className="w-4 h-4 mr-2" />
-            Share
-          </Button>
         </div>
 
         {/* Poll Card */}
-        <Card className="bg-gray-800/50 border-gray-700 p-6 mb-6">
-          {/* Poll Status */}
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-6 border border-orange-500/30 mb-6">
+          {/* Poll Header */}
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold text-orange-200 mb-2">{poll.question}</h1>
+              <p className="text-xs text-orange-300/60 mb-1">
+                ID: {poll.id.slice(0, 8)} | by {poll.creator_username}
+              </p>
+            </div>
             <div className="flex items-center gap-2">
-              {poll.is_active ? (
-                <>
-                  <Badge variant="secondary" className="bg-green-600 text-white">
-                    Active
-                  </Badge>
-                  <div className="flex items-center text-gray-300 text-sm">
+              <div className="flex items-center text-orange-300/70 text-sm">
+                {poll.is_active ? (
+                  <>
+                    <div className="w-2 h-2 bg-green-500 rounded-full mr-2" />
                     <Clock className="w-4 h-4 mr-1" />
                     {poll.timeLeft}
-                  </div>
-                </>
-              ) : (
-                <Badge variant="secondary" className="bg-red-600 text-white">
-                  🛑 Ended
-                </Badge>
-              )}
-            </div>
-            <div className="text-sm text-gray-400">
-              by {poll.creator_username}
+                  </>
+                ) : (
+                  <>
+                    <div className="w-2 h-2 bg-red-500 rounded-full mr-2" />
+                    Ended
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Question */}
-          <h1 className="text-2xl font-bold text-white mb-6">{poll.question}</h1>
-
           {/* Options */}
-          <div className="space-y-4">
+          <div className="space-y-3 mb-4">
             {poll.options.map((option, index) => {
               const isUserVote = poll.userVote === option.option_text;
               const isVotingThis = votingOption === option.id;
+              const canVote = user && poll.is_active && !poll.hasVoted;
 
               return (
-                <div key={option.id} className="relative">
-                  {/* Voting UI */}
-                  {poll.is_active && !poll.hasVoted && (
-                    <div className="mb-2">
-                      <HoldButton
-                        onHoldStart={() => handleVoteStart(option.id)}
-                        onHoldEnd={handleVoteEnd}
-                        globalHolders={0}
-                        onActivationChange={() => {}}
-                      />
-                      {isVotingThis && (
-                        <div className="mt-2 text-center">
-                          <div className="text-white font-bold text-lg">
+                <div
+                  key={option.id}
+                  className={`bg-black/20 rounded-lg p-3 relative overflow-hidden transition-colors ${
+                    canVote ? 'cursor-pointer hover:bg-black/40' : 'cursor-default'
+                  } ${isUserVote ? 'ring-2 ring-orange-400' : ''}`}
+                  onMouseDown={() => canVote && handleVoteStart(option.id)}
+                  onMouseUp={handleVoteEnd}
+                  onMouseLeave={handleVoteEnd}
+                  onTouchStart={() => canVote && handleVoteStart(option.id)}
+                  onTouchEnd={handleVoteEnd}
+                >
+                  {isVotingThis && (
+                    <>
+                      <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-yellow-500/20 transition-all duration-100" />
+                      {countdownSeconds > 0 && (
+                        <div className="absolute inset-0 flex items-center justify-center z-20">
+                          <div className="bg-orange-500 text-white rounded-full w-16 h-16 flex items-center justify-center text-2xl font-bold animate-pulse">
                             {countdownSeconds}
-                          </div>
-                          <div className="text-gray-300 text-sm">
-                            Voting for: {option.option_text}
                           </div>
                         </div>
                       )}
-                    </div>
+                    </>
                   )}
 
-                  {/* Option Display */}
-                  <div className={`p-4 rounded-lg border transition-all ${
-                    isUserVote 
-                      ? 'bg-blue-600/30 border-blue-500 ring-2 ring-blue-500' 
-                      : 'bg-gray-700/50 border-gray-600'
-                  }`}>
+                  <div className="relative z-10">
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-white font-medium flex-1">
+                      <span className="text-orange-200 flex-1">
                         {option.option_text}
                         {isUserVote && (
-                          <Badge className="ml-2 bg-blue-600 text-white text-xs">
+                          <Badge className="ml-2 bg-orange-600 text-white text-xs">
                             Your vote
                           </Badge>
                         )}
                       </span>
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className="text-gray-300">
-                          {option.vote_count} votes
-                        </span>
-                        {(poll.hasVoted || !poll.is_active) && (
-                          <span className="text-white font-bold">
-                            {option.percentage}%
-                          </span>
-                        )}
-                      </div>
+                      <span className="text-orange-300/80 text-sm">{option.percentage}%</span>
                     </div>
-
-                    {/* Progress Bar */}
+                    
                     {(poll.hasVoted || !poll.is_active) && (
-                      <div className="w-full bg-gray-600 rounded-full h-2">
+                      <div className="bg-black/40 rounded-full h-2">
                         <div
-                          className={`h-2 rounded-full transition-all duration-1000 ${
-                            isUserVote ? 'bg-blue-500' : 'bg-gray-400'
-                          }`}
+                          className="bg-gradient-to-r from-orange-400 to-yellow-500 h-2 rounded-full transition-all duration-300"
                           style={{ width: `${option.percentage}%` }}
                         />
                       </div>
@@ -454,30 +503,77 @@ const PollView = () => {
             })}
           </div>
 
-          {/* Poll Stats */}
-          <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-600">
-            <div className="flex items-center gap-4 text-sm text-gray-300">
-              <div className="flex items-center gap-1">
-                <Users className="w-4 h-4" />
+          {/* Poll Actions */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4 text-orange-300/70 text-sm">
+              <div className="flex items-center">
+                <User size={16} className="mr-1" />
                 {poll.total_votes} votes
               </div>
               {poll.push_count > 0 && (
-                <div>🔥 {poll.push_count} boosts</div>
+                <div className="flex items-center">
+                  <Rocket size={16} className="mr-1" />
+                  {poll.push_count} pushes
+                </div>
               )}
             </div>
 
-            {/* Boost Button */}
-            {poll.hasVoted && poll.is_active && user && (
-              <Button
-                onClick={handlePush}
-                className="bg-orange-600 hover:bg-orange-700 text-white"
-                size="sm"
-              >
-                🔥 BOOST
-              </Button>
+            {user && (
+              <div className="flex gap-2">
+                {poll.hasVoted && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleVoteStart("edit")}
+                    className="border-orange-500/30 text-orange-300 hover:bg-orange-500/10"
+                  >
+                    Edit Vote
+                  </Button>
+                )}
+                {poll.hasVoted && poll.is_active && (
+                  <Button
+                    size="sm"
+                    onClick={handlePush}
+                    className="bg-orange-500 text-white hover:bg-orange-600"
+                  >
+                    <Rocket size={16} className="mr-1" />
+                    Push
+                  </Button>
+                )}
+                {!savedPolls.includes(poll.id) && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleSavePoll}
+                    className="border-orange-500/30 text-orange-300 hover:bg-orange-500/10"
+                  >
+                    <BookmarkPlus size={16} />
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleHidePoll}
+                  className="border-red-500/30 text-red-300 hover:bg-red-500/10"
+                >
+                  <EyeOff size={16} />
+                </Button>
+              </div>
             )}
           </div>
-        </Card>
+        </div>
+
+        {/* Share Button */}
+        <div className="flex justify-center">
+          <Button
+            variant="outline"
+            onClick={handleShare}
+            className="border-blue-500/30 text-blue-300 hover:bg-blue-500/10"
+          >
+            <Share2 className="w-4 h-4 mr-2" />
+            Share Poll
+          </Button>
+        </div>
       </div>
     </div>
   );
