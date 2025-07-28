@@ -75,76 +75,85 @@ export type Database = {
         ]
       }
       poll_options: {
-        Row: {
-          created_at: string | null
-          id: string
-          option_text: string
-          poll_id: string
-          votes: number | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          option_text: string
-          poll_id: string
-          votes?: number | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          option_text?: string
-          poll_id?: string
-          votes?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "poll_options_poll_id_fkey"
-            columns: ["poll_id"]
-            isOneToOne: false
-            referencedRelation: "polls"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+  Row: {
+    created_at: string | null
+    id: string
+    option_text: string
+    poll_id: string
+    votes: number | null
+    votes_cache: number | null
+  }
+  Insert: {
+    created_at?: string | null
+    id?: string
+    option_text: string
+    poll_id: string
+    votes?: number | null
+    votes_cache?: number | null
+  }
+  Update: {
+    created_at?: string | null
+    id?: string
+    option_text?: string
+    poll_id?: string
+    votes?: number | null
+    votes_cache?: number | null
+  }
+  Relationships: [
+    {
+      foreignKeyName: "poll_options_poll_id_fkey"
+      columns: ["poll_id"]
+      isOneToOne: false
+      referencedRelation: "polls"
+      referencedColumns: ["id"]
+    },
+  ]
+}
       polls: {
-        Row: {
-          created_at: string | null
-          created_by: string
-          creator_username: string
-          expires_at: string | null
-          id: string
-          push_count: number | null
-          question: string
-          status: Database["public"]["Enums"]["poll_status"] | null
-          total_votes: number | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          created_by: string
-          creator_username: string
-          expires_at?: string | null
-          id?: string
-          push_count?: number | null
-          question: string
-          status?: Database["public"]["Enums"]["poll_status"] | null
-          total_votes?: number | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          created_by?: string
-          creator_username?: string
-          expires_at?: string | null
-          id?: string
-          push_count?: number | null
-          question?: string
-          status?: Database["public"]["Enums"]["poll_status"] | null
-          total_votes?: number | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
+  Row: {
+    created_at: string | null
+    created_by: string
+    creator_username: string
+    expires_at: string | null
+    id: string
+    push_count: number | null
+    push_count_cache: number | null
+    question: string
+    status: Database["public"]["Enums"]["poll_status"] | null
+    total_votes: number | null
+    total_votes_cache: number | null
+    updated_at: string | null
+  }
+  Insert: {
+    created_at?: string | null
+    created_by: string
+    creator_username: string
+    expires_at?: string | null
+    id?: string
+    push_count?: number | null
+    push_count_cache?: number | null
+    question: string
+    status?: Database["public"]["Enums"]["poll_status"] | null
+    total_votes?: number | null
+    total_votes_cache?: number | null
+    updated_at?: string | null
+  }
+  Update: {
+    created_at?: string | null
+    created_by?: string
+    creator_username?: string
+    expires_at?: string | null
+    id?: string
+    push_count?: number | null
+    push_count_cache?: number | null
+    question?: string
+    status?: Database["public"]["Enums"]["poll_status"] | null
+    total_votes?: number | null
+    total_votes_cache?: number | null
+    updated_at?: string | null
+  }
+  Relationships: []
+}
       profiles: {
         Row: {
           country: string | null
@@ -240,75 +249,6 @@ export type Database = {
           },
         ]
       }
-      user_pushes: {
- Row: {
-    id: string
-    user_id: string
-    poll_id: string
-    pushed_at: string
-  }
-  Insert: {
-    id?: string
-    user_id: string
-    poll_id: string
-    pushed_at?: string
-  }
-  Update: {
-    id?: string
-    user_id?: string
-    poll_id?: string
-    pushed_at?: string
-  }
-  Relationships: [
-    {
-      foreignKeyName: "user_pushes_user_id_fkey"
-      columns: ["user_id"]
-      isOneToOne: false
-      referencedRelation: "profiles"
-      referencedColumns: ["id"]
-    },
-    {
-      foreignKeyName: "user_pushes_poll_id_fkey"
-      columns: ["poll_id"]
-      isOneToOne: false
-      referencedRelation: "polls"
-      referencedColumns: ["id"]
-    }
-  ]
-}
-
-daily_push_limits: {
-  Row: {
-    id: string
-    user_id: string
-    push_date: string
-    push_count: number
-    max_pushes: number
-  }
-  Insert: {
-    id?: string
-    user_id: string
-    push_date?: string
-    push_count?: number
-    max_pushes?: number
-  }
-  Update: {
-    id?: string
-    user_id?: string
-    push_date?: string
-    push_count?: number
-    max_pushes?: number
-  }
-  Relationships: [
-    {
-      foreignKeyName: "daily_push_limits_user_id_fkey"
-      columns: ["user_id"]
-      isOneToOne: false
-      referencedRelation: "profiles"
-      referencedColumns: ["id"]
-    }
-  ]
-}
     }
     Views: {
       [_ in never]: never
