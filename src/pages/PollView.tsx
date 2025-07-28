@@ -76,8 +76,7 @@ const PollView = () => {
           *,
           poll_options (
             id,
-            option_text,
-            vote_count
+            option_text
           )
         `)
         .eq("id", id)
@@ -114,9 +113,23 @@ const PollView = () => {
         }
       }
 
-      // Calculate percentages
-      const totalVotes = pollData.poll_options.reduce((sum: number, option: any) => sum + option.vote_count, 0);
-      const optionsWithPercentage = pollData.poll_options.map((option: any) => ({
+      // Calculate vote counts and percentages
+      const optionsWithCounts = await Promise.all(
+        pollData.poll_options.map(async (option: any) => {
+          const { count } = await supabase
+            .from("user_votes")
+            .select("*", { count: "exact", head: true })
+            .eq("option_id", option.id);
+
+          return {
+            ...option,
+            vote_count: count || 0,
+          };
+        })
+      );
+
+      const totalVotes = optionsWithCounts.reduce((sum: number, option: any) => sum + option.vote_count, 0);
+      const optionsWithPercentage = optionsWithCounts.map((option: any) => ({
         ...option,
         percentage: totalVotes > 0 ? Math.round((option.vote_count / totalVotes) * 100) : 0,
       }));
