@@ -552,6 +552,19 @@ const MyApp = () => {
               <p className="text-blue-300/70">{user.email}</p>
             </div>
 
+            {/* Badges Section */}
+            <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-4 border border-blue-500/20">
+              <div className="flex items-center gap-3 mb-3">
+                <Award size={20} className="text-yellow-400" />
+                <span className="text-blue-200 font-medium">Your badges!</span>
+              </div>
+              <div className="text-center py-4">
+                <p className="text-blue-300/60 text-sm">No badges earned yet</p>
+                <p className="text-blue-300/40 text-xs mt-1">Complete actions to earn badges</p>
+              </div>
+            </div>
+
+            {/* Statistics Section */}
             <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-4 border border-blue-500/20">
               <div className="flex items-center gap-3 mb-3">
                 <BarChart3 size={20} className="text-blue-400" />
@@ -559,11 +572,19 @@ const MyApp = () => {
               </div>
               <div className="grid grid-cols-2 gap-4 text-center">
                 <div>
-                  <div className="text-2xl font-bold text-blue-400">{userStats.createdPolls}</div>
+                  <div className="text-2xl font-bold text-blue-400">{loading ? "..." : userStats.createdPolls}</div>
                   <div className="text-blue-300/60 text-sm">Created polls</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-blue-400">{userStats.totalVotes}</div>
+                  <div className="text-2xl font-bold text-blue-400">{loading ? "..." : userStats.votesCast}</div>
+                  <div className="text-blue-300/60 text-sm">Voted</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-blue-400">{loading ? "..." : userStats.boostsReceived}</div>
+                  <div className="text-blue-300/60 text-sm">Boosts received</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-blue-400">{loading ? "..." : userStats.votesReceived}</div>
                   <div className="text-blue-300/60 text-sm">Votes received</div>
                 </div>
               </div>
