@@ -283,7 +283,10 @@ const Statistics = () => {
         event: '*',
         schema: 'public',
         table: 'button_holds'
-      }, fetchStats)
+      }, () => {
+        console.log('🔄 Button holds changed - refreshing stats');
+        fetchStats();
+      })
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
