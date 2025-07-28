@@ -57,16 +57,30 @@ const Index = () => {
     switch (activeTab) {
       case 'polls':
         return (
-          <Polls 
-            onNavigateToCreate={() => setActiveTab('create')}
-          />
+          <div className="flex-1 overflow-y-auto pb-20">
+            <Polls 
+              onNavigateToCreate={() => setActiveTab('create')}
+            />
+          </div>
         );
       case 'create':
-        return <Create />;
+        return (
+          <div className="flex-1 overflow-y-auto pb-20">
+            <Create />
+          </div>
+        );
       case 'statistics':
-        return <Statistics />;
+        return (
+          <div className="flex-1 overflow-y-auto pb-20">
+            <Statistics />
+          </div>
+        );
       case 'myapp':
-        return <MyApp />;
+        return (
+          <div className="flex-1 overflow-y-auto pb-20">
+            <MyApp />
+          </div>
+        );
       default:
         return (
           <div className="flex-1 flex flex-col items-center justify-center px-6 relative">

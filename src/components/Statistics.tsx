@@ -363,7 +363,7 @@ const Statistics = () => {
   );
 
   return (
-    <div className="flex-1 overflow-y-auto px-6 py-6">
+    <div className="px-6 py-6">
       <div className="max-w-md mx-auto space-y-6">
         <div className="text-center mb-8">
           <h2 className="text-2xl font-bold text-blue-400 mb-2">Community Statistics</h2>
