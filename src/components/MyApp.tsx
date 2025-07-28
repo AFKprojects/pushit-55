@@ -4,6 +4,7 @@ import { Users, BarChart3, Clock, Vote, Archive, BookmarkPlus, Eye, TrendingUp, 
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { usePollManagement } from '@/hooks/usePollManagement';
+import { useUserStats } from '@/hooks/useUserStats';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -28,15 +29,7 @@ interface Poll {
   userVote?: string;
 }
 
-interface UserStats {
-  createdPolls: number;
-  totalVotes: number;
-  observers: number;
-  following: number;
-  votesReceived: number;
-  boostsReceived: number;
-  votesCast: number;
-}
+// Remove local interface - using from useUserStats hook
 
 const MyApp = () => {
   const [activeSection, setActiveSection] = useState('mysubjects');
@@ -48,7 +41,7 @@ const MyApp = () => {
   const [createdPolls, setCreatedPolls] = useState<Poll[]>([]);
   const [votedPolls, setVotedPolls] = useState<Poll[]>([]);
   const [savedPolls, setSavedPolls] = useState<Poll[]>([]);
-  const [userStats, setUserStats] = useState<UserStats>({ createdPolls: 0, totalVotes: 0, observers: 0, following: 0, votesReceived: 0, boostsReceived: 0, votesCast: 0 });
+  const { stats: userStats, loading: statsLoading } = useUserStats();
   const [loading, setLoading] = useState(true);
   const [searchUsername, setSearchUsername] = useState('');
   
@@ -152,19 +145,7 @@ const MyApp = () => {
       setVotedPolls(processVotedPolls(voted || []));
       setSavedPolls(processPolls(saved?.map(s => s.polls) || []));
 
-      // Calculate stats
-      const totalVotesReceived = (created || []).reduce((sum, poll) => sum + poll.total_votes, 0);
-      const totalVotesCast = voted?.length || 0;
-      
-      setUserStats({
-        createdPolls: created?.length || 0,
-        totalVotes: totalVotesReceived,
-        observers: Math.floor(Math.random() * 50) + 10, // Placeholder
-        following: Math.floor(Math.random() * 25) + 5, // Placeholder
-        votesReceived: totalVotesReceived,
-        boostsReceived: Math.floor(Math.random() * 100) + 20, // Placeholder
-        votesCast: totalVotesCast
-      });
+      // Stats are now handled by useUserStats hook
 
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -487,7 +468,7 @@ const MyApp = () => {
           }}
         >
           <Eye size={24} className="text-blue-400 mx-auto mb-2" />
-          <div className="text-2xl font-bold text-blue-400">{userStats.observers}</div>
+          <div className="text-2xl font-bold text-blue-400">0</div>
           <div className="text-blue-300/60 text-sm">Followers</div>
         </div>
         <div 
@@ -500,7 +481,7 @@ const MyApp = () => {
           }}
         >
           <UserPlus size={24} className="text-green-400 mx-auto mb-2" />
-          <div className="text-2xl font-bold text-blue-400">{userStats.following}</div>
+          <div className="text-2xl font-bold text-blue-400">0</div>
           <div className="text-blue-300/60 text-sm">Following</div>
         </div>
         <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-4 border border-blue-500/20 text-center">
@@ -572,19 +553,19 @@ const MyApp = () => {
               </div>
               <div className="grid grid-cols-2 gap-4 text-center">
                 <div>
-                  <div className="text-2xl font-bold text-blue-400">{loading ? "..." : userStats.createdPolls}</div>
+                  <div className="text-2xl font-bold text-blue-400">{statsLoading ? "..." : userStats.createdPolls}</div>
                   <div className="text-blue-300/60 text-sm">Created polls</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-blue-400">{loading ? "..." : userStats.votesCast}</div>
+                  <div className="text-2xl font-bold text-blue-400">{statsLoading ? "..." : userStats.votesCast}</div>
                   <div className="text-blue-300/60 text-sm">Voted</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-blue-400">{loading ? "..." : userStats.boostsReceived}</div>
+                  <div className="text-2xl font-bold text-blue-400">{statsLoading ? "..." : userStats.boostsReceived}</div>
                   <div className="text-blue-300/60 text-sm">Boosts received</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-blue-400">{loading ? "..." : userStats.votesReceived}</div>
+                  <div className="text-2xl font-bold text-blue-400">{statsLoading ? "..." : userStats.votesReceived}</div>
                   <div className="text-blue-300/60 text-sm">Votes received</div>
                 </div>
               </div>
