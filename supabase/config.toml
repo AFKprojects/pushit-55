@@ -1,1 +1,29 @@
 project_id = "lrtyimemndteynzrxsgb"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[auth]
+enabled = true
+port = 9999
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://lrtyimemndteynzrxsgb.supabase.co"]
+jwt_expiry = 3600
+enable_signup = true
+enable_anonymous_sign_ins = false
+
+[auth.email]
+enable_signup = true
+
+[db]
+port = 54322
+
+[functions.archive-polls]
+verify_jwt = false
+
+[functions.cleanup-button-holds]
+verify_jwt = false

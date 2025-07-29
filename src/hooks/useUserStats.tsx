@@ -7,6 +7,8 @@ interface UserStats {
   votesCast: number;
   votesReceived: number;
   boostsReceived: number;
+  followersCount: number;
+  followingCount: number;
 }
 
 export const useUserStats = () => {
@@ -14,7 +16,9 @@ export const useUserStats = () => {
     createdPolls: 0,
     votesCast: 0,
     votesReceived: 0,
-    boostsReceived: 0
+    boostsReceived: 0,
+    followersCount: 0,
+    followingCount: 0
   });
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
@@ -38,7 +42,9 @@ export const useUserStats = () => {
         createdPolls: Number(statsData.created_polls) || 0,
         votesCast: Number(statsData.votes_cast) || 0,
         votesReceived: Number(statsData.votes_received) || 0,
-        boostsReceived: Number(statsData.boosts_received) || 0
+        boostsReceived: Number(statsData.boosts_received) || 0,
+        followersCount: Number(statsData.followers_count) || 0,
+        followingCount: Number(statsData.following_count) || 0
       });
     }
   } catch (error) {
@@ -66,7 +72,7 @@ export const useUserStats = () => {
     if (user) {
       fetchStats();
     } else {
-      setStats({ createdPolls: 0, votesCast: 0, votesReceived: 0, boostsReceived: 0 });
+      setStats({ createdPolls: 0, votesCast: 0, votesReceived: 0, boostsReceived: 0, followersCount: 0, followingCount: 0 });
       setLoading(false);
     }
   }, [user?.id]);

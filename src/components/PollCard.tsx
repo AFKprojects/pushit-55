@@ -18,7 +18,7 @@ interface Poll {
   creator_username: string;
   status: 'active' | 'archived';
   total_votes: number;
-  push_count: number;
+  boostCount: number;
   expires_at: string;
   created_at: string;
   options: PollOption[];
@@ -206,10 +206,10 @@ const PollCard = ({
             <User size={16} className="mr-1" />
             {poll.total_votes} votes
           </div>
-          {poll.push_count > 0 && (
+          {poll.boostCount > 0 && (
             <div className="flex items-center">
               <Rocket size={16} className="mr-1" />
-              {poll.push_count} boosts
+              {poll.boostCount} boosts
             </div>
           )}
         </div>

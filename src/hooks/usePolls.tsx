@@ -10,7 +10,7 @@ interface Poll {
   creator_username: string;
   status: 'active' | 'archived';
   total_votes: number;
-  push_count: number;
+  boostCount: number;
   expires_at: string;
   created_at: string;
   options: Array<{
@@ -74,7 +74,7 @@ export const usePolls = () => {
           creator_username,
           status,
           total_votes,
-          push_count,
+          boost_count,
           expires_at,
           created_at,
           poll_options (
@@ -95,7 +95,7 @@ export const usePolls = () => {
           creator_username,
           status,
           total_votes,
-          push_count,
+          boost_count,
           expires_at,
           created_at,
           poll_options (
@@ -153,7 +153,7 @@ export const usePolls = () => {
             // Calculate hot score based on votes and pushes with time decay
             const ageInHours = (Date.now() - new Date(poll.created_at).getTime()) / (1000 * 60 * 60);
             const timeFactor = Math.max(0.1, 1 / (1 + ageInHours * 0.1)); // Decay over time
-            const hotScore = (actualTotalVotes + (poll.push_count || 0) * 3) * timeFactor;
+            const hotScore = (actualTotalVotes + (poll.boost_count || 0) * 3) * timeFactor;
 
             return {
               id: poll.id,
@@ -161,7 +161,7 @@ export const usePolls = () => {
               creator_username: poll.creator_username,
               status: poll.status,
               total_votes: actualTotalVotes, // Use calculated total instead of stored value
-              push_count: poll.push_count || 0,
+              boostCount: poll.boost_count || 0,
               expires_at: poll.expires_at,
               created_at: poll.created_at,
               options,
@@ -378,7 +378,7 @@ export const usePolls = () => {
           creator_username,
           status,
           total_votes,
-          push_count,
+          boost_count,
           expires_at,
           created_at,
           poll_options (
@@ -428,7 +428,7 @@ export const usePolls = () => {
 
       const ageInHours = (Date.now() - new Date(pollData.created_at).getTime()) / (1000 * 60 * 60);
       const timeFactor = Math.max(0.1, 1 / (1 + ageInHours * 0.1));
-      const hotScore = (actualTotalVotes + (pollData.push_count || 0) * 3) * timeFactor;
+      const hotScore = (actualTotalVotes + (pollData.boost_count || 0) * 3) * timeFactor;
 
       const processedPoll = {
         id: pollData.id,
@@ -436,7 +436,7 @@ export const usePolls = () => {
         creator_username: pollData.creator_username,
         status: pollData.status,
         total_votes: actualTotalVotes,
-        push_count: pollData.push_count || 0,
+        boostCount: pollData.boost_count || 0,
         expires_at: pollData.expires_at,
         created_at: pollData.created_at,
         options,
