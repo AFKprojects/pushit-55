@@ -102,7 +102,7 @@ const PollModal = () => {
           .select("option_id, poll_options(option_text)")
           .eq("poll_id", pollId)
           .eq("user_id", user.id)
-          .single();
+          .maybeSingle();
 
         if (voteData) {
           userVote = voteData.poll_options?.option_text;
