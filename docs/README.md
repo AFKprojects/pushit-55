@@ -15,7 +15,7 @@ Push It! is a real-time interactive web application that allows users worldwide 
 ### 2. Polling System
 - **Create Polls**: Users can create polls with multiple options and time limits
 - **Vote & Edit**: Vote on polls with ability to change votes
-- **Boost System**: Push/boost polls for increased visibility
+- **Boost System**: Boost polls for increased visibility
 - **Real-time Updates**: Live voting results and statistics
 - **Archive Management**: Automatic archiving of expired polls
 
@@ -66,8 +66,8 @@ Push It! is a real-time interactive web application that allows users worldwide 
 - `poll_options`: Multiple choice options for polls
 - `user_votes`: Voting records with change tracking
 - `saved_polls`: User bookmarks for polls
-- `daily_push_limits`: Rate limiting for poll boosting
-- `user_pushes`: Tracking of poll boost actions
+- `daily_boost_limits`: Rate limiting for poll boosting
+- `user_boosts`: Tracking of poll boost actions
 
 ### Real-time Features
 - Live session counting for button presses

@@ -67,9 +67,9 @@ CREATE TABLE polls (
   status poll_status DEFAULT 'active',
   total_votes INTEGER DEFAULT 0,
   votes_received_count INTEGER DEFAULT 0,
-  push_count NUMERIC,
+  boost_count NUMERIC,
   total_votes_cache INTEGER DEFAULT 0,
-  push_count_cache INTEGER DEFAULT 0
+  boost_count_cache INTEGER DEFAULT 0
 );
 ```
 
@@ -138,41 +138,41 @@ CREATE TABLE saved_polls (
 - Prevents duplicate saves
 - Automatic cleanup when polls are deleted
 
-### daily_push_limits
+### daily_boost_limits
 Rate limiting system for poll boosting.
 
 ```sql
-CREATE TABLE daily_push_limits (
+CREATE TABLE daily_boost_limits (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
-  date DATE DEFAULT CURRENT_DATE,
-  pushes_used INTEGER DEFAULT 0,
-  max_pushes INTEGER DEFAULT 3,
-  UNIQUE(user_id, date)
+  boost_date DATE DEFAULT CURRENT_DATE,
+  boost_count INTEGER DEFAULT 0,
+  max_boosts INTEGER DEFAULT 3,
+  UNIQUE(user_id, boost_date)
 );
 ```
 
 **Key Features**:
-- Daily rate limiting (3 pushes per day)
+- Daily rate limiting (3 boosts per day)
 - Automatic daily reset
 - Configurable limits per user
 
-### user_pushes
+### user_boosts
 Tracking individual poll boost actions.
 
 ```sql
-CREATE TABLE user_pushes (
+CREATE TABLE user_boosts (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
-  poll_id TEXT REFERENCES polls(id) ON DELETE CASCADE,
-  pushed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  poll_id UUID REFERENCES polls(id) ON DELETE CASCADE,
+  boosted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   UNIQUE(user_id, poll_id)
 );
 ```
 
 **Key Features**:
-- One push per user per poll
-- Complete push history tracking
+- One boost per user per poll
+- Complete boost history tracking
 - Links to rate limiting system
 
 ## Database Functions
@@ -206,7 +206,7 @@ BEGIN
     (SELECT COUNT(*) FROM polls WHERE created_by = user_uuid),
     (SELECT COUNT(*) FROM user_votes WHERE user_id = user_uuid),
     (SELECT COALESCE(SUM(total_votes), 0) FROM polls WHERE created_by = user_uuid),
-    (SELECT COALESCE(SUM(push_count), 0) FROM polls WHERE created_by = user_uuid);
+    (SELECT COALESCE(SUM(boost_count_cache), 0) FROM polls WHERE created_by = user_uuid);
 END;
 $$ LANGUAGE plpgsql;
 ```
@@ -271,16 +271,16 @@ CREATE TRIGGER update_votes_cache_trigger
   FOR EACH ROW EXECUTE FUNCTION update_votes_cache();
 ```
 
-#### update_push_cache_trigger
-Automatically updates push counts when pushes change.
+#### update_boost_cache_trigger
+Automatically updates boost counts when boosts change.
 
 ```sql
-CREATE OR REPLACE FUNCTION update_push_cache()
+CREATE OR REPLACE FUNCTION update_boost_cache()
 RETURNS TRIGGER AS $$
 BEGIN
   UPDATE polls 
-  SET push_count_cache = (
-    SELECT COUNT(*) FROM user_pushes WHERE poll_id = NEW.poll_id
+  SET boost_count_cache = (
+    SELECT COUNT(*) FROM user_boosts WHERE poll_id = NEW.poll_id
   )
   WHERE id = NEW.poll_id;
   
@@ -288,9 +288,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
 
-CREATE TRIGGER update_push_cache_trigger
-  AFTER INSERT OR UPDATE OR DELETE ON user_pushes
-  FOR EACH ROW EXECUTE FUNCTION update_push_cache();
+CREATE TRIGGER update_boost_cache_trigger
+  AFTER INSERT OR UPDATE OR DELETE ON user_boosts
+  FOR EACH ROW EXECUTE FUNCTION update_boost_cache();
 ```
 
 #### poll_vote_count_trigger
@@ -359,14 +359,14 @@ profiles (users)
 ├── polls (1:many) - Created polls  
 ├── user_votes (1:many) - Voting history
 ├── saved_polls (1:many) - Bookmarks
-├── daily_push_limits (1:many) - Rate limiting
-└── user_pushes (1:many) - Boost actions
+├── daily_boost_limits (1:many) - Rate limiting
+└── user_boosts (1:many) - Boost actions
 
 polls
 ├── poll_options (1:many) - Multiple choice options
 ├── user_votes (1:many) - All votes on poll
 ├── saved_polls (1:many) - Users who saved
-└── user_pushes (1:many) - Boost history
+└── user_boosts (1:many) - Boost history
 
 poll_options
 └── user_votes (1:many) - Votes for this option
@@ -418,7 +418,7 @@ The application uses Supabase real-time features for:
 ### Rate Limiting
 - Poll creation limits
 - Vote change restrictions
-- Boost/push daily limits
+- Boost daily limits
 
 ## Performance Optimization
 

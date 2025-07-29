@@ -211,7 +211,7 @@ export const usePolls = () => {
         .select('id, option_id')
         .eq('poll_id', pollId)
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (existingVote) {
         // Update existing vote (edit vote)

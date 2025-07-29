@@ -162,14 +162,14 @@ User (profiles)
 Poll (polls)
 ├── Options (poll_options)  
 ├── Votes (user_votes)
-└── Push History (user_pushes)
+└── Boost History (user_boosts)
 ```
 
 ### Key Relationships
 - Users can create multiple polls
 - Users can vote on multiple polls (one vote per poll)
 - Users can save polls for later
-- Users can boost/push polls (daily limits)
+- Users can boost polls (daily limits)
 - Button sessions track geographic data
 
 ## State Management
