@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 
-interface BoostLimits {
+export interface BoostLimits {
   boostsUsed: number;
   maxBoosts: number;
   canBoost: boolean;

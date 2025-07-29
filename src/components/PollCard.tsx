@@ -39,9 +39,9 @@ interface PollCardProps {
   onVoteEnd: () => void;
   onSavePoll: (pollId: string) => void;
   onHidePoll: (pollId: string) => void;
-  onPushPoll: (pollId: string) => void;
-  canPushPoll: (pollId: string, hasVoted: boolean) => boolean;
-  hasPushedPoll: (pollId: string) => boolean;
+  onBoostPoll: (pollId: string) => void;
+  canBoost: boolean;
+  hasBoosts: boolean;
   canEditVote?: boolean;
   isEditingVote?: boolean;
 }
@@ -57,9 +57,9 @@ const PollCard = ({
   onVoteEnd,
   onSavePoll,
   onHidePoll,
-  onPushPoll,
-  canPushPoll,
-  hasPushedPoll,
+  onBoostPoll,
+  canBoost,
+  hasBoosts,
   canEditVote = false,
   isEditingVote = false
 }: PollCardProps) => {
@@ -70,9 +70,9 @@ const PollCard = ({
 
   const isExpired = poll.timeLeft === "Ended";
   const canVote = user && !isArchive && !isExpired && (!poll.hasVoted || isEditingVote);
-  const showPushButton = poll.hasVoted && !isArchive && !isExpired;
-  const isPushed = hasPushedPoll(poll.id);
-  const canPush = canPushPoll(poll.id, poll.hasVoted || false);
+  const showBoostButton = poll.hasVoted && !isArchive && !isExpired;
+  const isBoosted = false; // Will be implemented with boost check
+  const canBoostPoll = canBoost;
 
   useEffect(() => {
     const calculateTimeLeft = () => {
@@ -226,20 +226,20 @@ const PollCard = ({
                 Edit Vote
               </Button>
             )}
-            {showPushButton && (
+            {showBoostButton && (
               <Button
                 size="sm"
-                variant={isPushed ? "secondary" : "default"}
-                onClick={() => onPushPoll(poll.id)}
-                disabled={!canPush}
+                variant={isBoosted ? "secondary" : "default"}
+                onClick={() => onBoostPoll(poll.id)}
+                disabled={!canBoostPoll}
                 className={`${
-                  isPushed 
+                  isBoosted 
                     ? "bg-orange-500/20 text-orange-300 border-orange-500/30" 
                     : "bg-orange-500 text-white hover:bg-orange-600"
                 } transition-colors`}
               >
                 <Rocket size={16} className="mr-1" />
-                {isPushed ? 'Boosted' : 'Boost'}
+                {isBoosted ? 'Boosted' : 'Boost'}
               </Button>
             )}
             {!poll.hasVoted && (

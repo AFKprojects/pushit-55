@@ -25,7 +25,7 @@ interface AllTimeStats {
   allTimeRecord: number;
   mostBoostedPoll: {
     question: string;
-    pushCount: number;
+    boostCount: number;
   } | null;
   countryRankingAllTime: CountryStats[];
 }
@@ -257,8 +257,8 @@ const Statistics = () => {
         // Get most boosted poll
         const { data: mostBoostedPollData } = await supabase
           .from('polls')
-          .select('question, push_count')
-          .order('push_count', { ascending: false })
+          .select('question, boost_count_cache')
+          .order('boost_count_cache', { ascending: false })
           .limit(1)
           .single();
 
@@ -272,7 +272,7 @@ const Statistics = () => {
           allTimeRecord,
           mostBoostedPoll: mostBoostedPollData ? {
             question: mostBoostedPollData.question,
-            pushCount: mostBoostedPollData.push_count || 0
+            boostCount: mostBoostedPollData.boost_count_cache || 0
           } : null,
           countryRankingAllTime
         });
@@ -459,7 +459,7 @@ const Statistics = () => {
                   <h3 className="text-blue-200 font-medium">Most Boosted Poll</h3>
                 </div>
                 <p className="text-blue-200 text-sm mb-2">{allTimeStats.mostBoostedPoll.question}</p>
-                <p className="text-blue-400 font-bold">{allTimeStats.mostBoostedPoll.pushCount} boosts</p>
+                <p className="text-blue-400 font-bold">{allTimeStats.mostBoostedPoll.boostCount} boosts</p>
               </div>
             )}
             

@@ -1,12 +1,12 @@
 import { Rocket } from 'lucide-react';
-import { PushLimits } from '@/hooks/usePushSystem';
+import { BoostLimits } from '@/hooks/usePushSystem';
 
 interface PushLimitIndicatorProps {
-  pushLimits: PushLimits;
+  boostLimits: BoostLimits;
 }
 
-const PushLimitIndicator = ({ pushLimits }: PushLimitIndicatorProps) => {
-  const percentage = (pushLimits.pushCount / pushLimits.maxPushes) * 100;
+const PushLimitIndicator = ({ boostLimits }: PushLimitIndicatorProps) => {
+  const percentage = (boostLimits.boostsUsed / boostLimits.maxBoosts) * 100;
   
   return (
     <div className="bg-black/40 backdrop-blur-sm rounded-lg p-3 border border-orange-500/20">
@@ -16,7 +16,7 @@ const PushLimitIndicator = ({ pushLimits }: PushLimitIndicatorProps) => {
           <span className="text-orange-200 text-sm font-medium">Daily Boosts</span>
         </div>
         <span className="text-orange-300 text-sm">
-          {pushLimits.remainingPushes}/{pushLimits.maxPushes}
+          {boostLimits.maxBoosts - boostLimits.boostsUsed}/{boostLimits.maxBoosts}
         </span>
       </div>
       
@@ -27,7 +27,7 @@ const PushLimitIndicator = ({ pushLimits }: PushLimitIndicatorProps) => {
         />
       </div>
       
-      {pushLimits.remainingPushes === 0 && (
+      {!boostLimits.canBoost && (
         <p className="text-orange-300/70 text-xs mt-2">
           Boost limit reached. Resets at midnight.
         </p>

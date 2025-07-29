@@ -23,7 +23,7 @@ interface Poll {
   expires_at: string;
   created_at: string;
   total_votes: number;
-  push_count: number;
+  boost_count_cache: number;
   options: PollOption[];
   is_active: boolean;
   timeLeft?: string;
@@ -35,7 +35,7 @@ const PollModal = () => {
   const { isOpen, pollId, closeModal, openModal } = usePollModal();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { pushPoll } = usePushSystem();
+  const { boostPoll } = usePushSystem();
   const { openModal: openUserModal } = useUserModal();
 
   const [poll, setPoll] = useState<Poll | null>(null);
@@ -272,14 +272,14 @@ const PollModal = () => {
     }
   };
 
-  const handlePush = async () => {
+  const handleBoost = async () => {
     if (!poll || !user) return;
     
     try {
-      await pushPoll(poll.id);
-      await fetchPoll(); // Refresh to get updated push count
+      await boostPoll(poll.id);
+      await fetchPoll(); // Refresh to get updated boost count
     } catch (error) {
-      console.error("Error pushing poll:", error);
+      console.error("Error boosting poll:", error);
     }
   };
 
@@ -526,10 +526,10 @@ const PollModal = () => {
                     <User size={16} className="mr-1" />
                     {poll.total_votes} votes
                   </div>
-                  {poll.push_count > 0 && (
+                  {poll.boost_count_cache > 0 && (
                     <div className="flex items-center">
                       <Rocket size={16} className="mr-1" />
-                      {poll.push_count} boosts
+                      {poll.boost_count_cache} boosts
                     </div>
                   )}
                 </div>
@@ -549,7 +549,7 @@ const PollModal = () => {
                     {poll.hasVoted && poll.is_active && (
                       <Button
                         size="sm"
-                        onClick={handlePush}
+                        onClick={handleBoost}
                         className="bg-orange-500 text-white hover:bg-orange-600"
                       >
                         <Rocket size={16} className="mr-1" />

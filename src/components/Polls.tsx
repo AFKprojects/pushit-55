@@ -16,7 +16,7 @@ interface PollsProps {
 const Polls = ({ onNavigateToCreate }: PollsProps) => {
   const { polls, archivedPolls, loading, sortMode, voteOnPoll, savePoll, hidePoll, updateSortMode, searchArchivedPoll } = usePolls();
   const { user } = useAuth();
-  const { pushLimits, pushPoll, canPushPoll, hasPushedPoll } = usePushSystem();
+  const { boostLimits, boostPoll } = usePushSystem();
   const [votingOption, setVotingOption] = useState<{pollId: string, optionIndex: number} | null>(null);
   const [votingProgress, setVotingProgress] = useState(0);
   const [countdownSeconds, setCountdownSeconds] = useState(0);
@@ -117,8 +117,8 @@ const Polls = ({ onNavigateToCreate }: PollsProps) => {
     await hidePoll(pollId);
   };
 
-  const handlePushPoll = async (pollId: string) => {
-    await pushPoll(pollId);
+  const handleBoostPoll = async (pollId: string) => {
+    await boostPoll(pollId);
   };
 
   const renderPollsList = (pollsList: typeof polls, isArchive = false) => (
@@ -153,9 +153,9 @@ const Polls = ({ onNavigateToCreate }: PollsProps) => {
             onVoteEnd={handleVoteEnd}
             onSavePoll={handleSavePoll}
             onHidePoll={handleHidePoll}
-            onPushPoll={handlePushPoll}
-            canPushPoll={canPushPoll}
-            hasPushedPoll={hasPushedPoll}
+            onBoostPoll={handleBoostPoll}
+            canBoost={boostLimits.canBoost}
+            hasBoosts={true}
             canEditVote={poll.hasVoted && !hasBeenEdited && !isArchive}
             isEditingVote={isInEditMode}
           />
@@ -186,7 +186,7 @@ const Polls = ({ onNavigateToCreate }: PollsProps) => {
 
         {user && (
           <div className="mb-6">
-            <PushLimitIndicator pushLimits={pushLimits} />
+            <PushLimitIndicator boostLimits={boostLimits} />
           </div>
         )}
 
