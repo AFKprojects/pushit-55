@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      badges: {
+        Row: {
+          badge_name: string
+          created_at: string | null
+          criteria_type: string
+          criteria_value: number
+          description: string | null
+          icon_url: string | null
+          id: string
+        }
+        Insert: {
+          badge_name: string
+          created_at?: string | null
+          criteria_type: string
+          criteria_value: number
+          description?: string | null
+          icon_url?: string | null
+          id?: string
+        }
+        Update: {
+          badge_name?: string
+          created_at?: string | null
+          criteria_type?: string
+          criteria_value?: number
+          description?: string | null
+          icon_url?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
       button_holds: {
         Row: {
           country: string | null
@@ -146,6 +176,67 @@ export type Database = {
           },
         ]
       }
+      poll_vote_holds: {
+        Row: {
+          device_id: string | null
+          duration_seconds: number | null
+          ended_at: string | null
+          id: string
+          is_active: boolean | null
+          last_heartbeat: string | null
+          option_id: string | null
+          poll_id: string | null
+          started_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          device_id?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_heartbeat?: string | null
+          option_id?: string | null
+          poll_id?: string | null
+          started_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          device_id?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_heartbeat?: string | null
+          option_id?: string | null
+          poll_id?: string | null
+          started_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poll_vote_holds_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "poll_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "poll_vote_holds_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "polls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "poll_vote_holds_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       polls: {
         Row: {
           created_at: string | null
@@ -250,6 +341,78 @@ export type Database = {
           },
         ]
       }
+      user_badges: {
+        Row: {
+          badge_id: string | null
+          earned_at: string | null
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          badge_id?: string | null
+          earned_at?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          badge_id?: string | null
+          earned_at?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_badges_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_follows: {
+        Row: {
+          created_at: string | null
+          followed_id: string | null
+          follower_id: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          followed_id?: string | null
+          follower_id?: string | null
+          id?: string
+        }
+        Update: {
+          created_at?: string | null
+          followed_id?: string | null
+          follower_id?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_follows_followed_id_fkey"
+            columns: ["followed_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_follows_follower_id_fkey"
+            columns: ["follower_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_pushes: {
         Row: {
           id: string
@@ -334,6 +497,10 @@ export type Database = {
     }
     Functions: {
       archive_expired_polls: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      cleanup_poll_vote_sessions: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
