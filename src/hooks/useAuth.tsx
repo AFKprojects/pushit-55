@@ -2,7 +2,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
 import { useGeolocation } from './useGeolocation';
 
 interface AuthContextType {
@@ -21,7 +20,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+  const navigate = null; // Remove useNavigate to fix AuthProvider error
   const { country } = useGeolocation();
 
   useEffect(() => {
@@ -32,10 +31,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
         setLoading(false);
         
-        // Redirect to main page after successful login
-        if (event === 'SIGNED_IN' && session?.user) {
-          navigate('/');
-        }
+          // Note: Navigation removed to fix AuthProvider error
       }
     );
 
@@ -47,7 +43,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, []);
 
   const signUp = async (email: string, password: string, userCountry?: string) => {
     const redirectUrl = `${window.location.origin}/`;

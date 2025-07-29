@@ -13,9 +13,5 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
-  },
-  // Force refresh schema cache
-  db: {
-    schema: 'public'
   }
 });
