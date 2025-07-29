@@ -57,25 +57,29 @@ Main polls table with metadata and cached statistics.
 
 ```sql
 CREATE TABLE polls (
-  id TEXT DEFAULT generate_poll_id() PRIMARY KEY,
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   question TEXT NOT NULL,
   created_by UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  creator_username TEXT NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  expires_at TIMESTAMP WITH TIME ZONE,
-  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'archived')),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  expires_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() + INTERVAL '24 hours'),
+  status poll_status DEFAULT 'active',
   total_votes INTEGER DEFAULT 0,
-  push_count INTEGER DEFAULT 0,
-  category TEXT,
-  is_anonymous BOOLEAN DEFAULT false
+  votes_received_count INTEGER DEFAULT 0,
+  push_count NUMERIC,
+  total_votes_cache INTEGER DEFAULT 0,
+  push_count_cache INTEGER DEFAULT 0
 );
 ```
 
 **Key Features**:
-- Custom ID generation function
-- Automatic expiration handling
-- Cached vote counts for performance
-- Boost/push system integration
-- Category support for organization
+- UUID primary key for unique identification
+- Automatic expiration (24 hours default)
+- Cached vote counts for performance (both legacy and new cache columns)
+- Boost/push system integration with cache
+- Creator username denormalization for performance
+- Custom poll_status enum type
 
 ### poll_options
 Multiple choice options for polls with cached vote counts.
@@ -174,7 +178,7 @@ CREATE TABLE user_pushes (
 ## Database Functions
 
 ### generate_poll_id()
-Generates short, readable poll IDs.
+Generates short, readable poll IDs (currently not used - UUIDs are used instead).
 
 ```sql
 CREATE OR REPLACE FUNCTION generate_poll_id()
@@ -182,7 +186,7 @@ RETURNS TEXT AS $$
 BEGIN
   RETURN lower(substr(encode(gen_random_bytes(4), 'hex'), 1, 8));
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
 ```
 
 ### get_user_stats(user_uuid UUID)
@@ -235,34 +239,95 @@ $$ LANGUAGE plpgsql;
 
 ## Triggers and Automation
 
-### Update Vote Counts
+### Active Triggers
+
+#### update_votes_cache_trigger
 Automatically updates cached vote counts when votes change.
 
 ```sql
--- Trigger function to update poll and option vote counts
-CREATE OR REPLACE FUNCTION update_vote_counts()
+CREATE OR REPLACE FUNCTION update_votes_cache()
 RETURNS TRIGGER AS $$
 BEGIN
-  -- Update logic for maintaining cached counts
-  -- Handles INSERT, UPDATE, DELETE operations
+  -- Update poll_options cache
+  UPDATE poll_options 
+  SET votes_cache = (
+    SELECT COUNT(*) FROM user_votes WHERE option_id = NEW.option_id
+  )
+  WHERE id = NEW.option_id;
+  
+  -- Update polls cache
+  UPDATE polls 
+  SET total_votes_cache = (
+    SELECT COUNT(*) FROM user_votes WHERE poll_id = NEW.poll_id
+  )
+  WHERE id = NEW.poll_id;
+  
+  RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
+
+CREATE TRIGGER update_votes_cache_trigger
+  AFTER INSERT OR UPDATE OR DELETE ON user_votes
+  FOR EACH ROW EXECUTE FUNCTION update_votes_cache();
+```
+
+#### update_push_cache_trigger
+Automatically updates push counts when pushes change.
+
+```sql
+CREATE OR REPLACE FUNCTION update_push_cache()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE polls 
+  SET push_count_cache = (
+    SELECT COUNT(*) FROM user_pushes WHERE poll_id = NEW.poll_id
+  )
+  WHERE id = NEW.poll_id;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
+
+CREATE TRIGGER update_push_cache_trigger
+  AFTER INSERT OR UPDATE OR DELETE ON user_pushes
+  FOR EACH ROW EXECUTE FUNCTION update_push_cache();
+```
+
+#### poll_vote_count_trigger
+Updates legacy vote count columns for backward compatibility.
+
+```sql
+CREATE OR REPLACE FUNCTION update_poll_vote_counts()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    UPDATE poll_options SET votes = votes + 1 WHERE id = NEW.option_id;
+    UPDATE polls SET total_votes = total_votes + 1 WHERE id = NEW.poll_id;
+  ELSIF TG_OP = 'DELETE' THEN
+    UPDATE poll_options SET votes = votes - 1 WHERE id = OLD.option_id;
+    UPDATE polls SET total_votes = total_votes - 1 WHERE id = OLD.poll_id;
+  END IF;
+  RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
 ```
 
 ### Archive Expired Polls
-Automatically archives polls past their expiration date.
+Function to archive polls past their expiration date (called via Edge Function).
 
 ```sql
--- Scheduled function to archive expired polls
 CREATE OR REPLACE FUNCTION archive_expired_polls()
 RETURNS void AS $$
 BEGIN
   UPDATE polls 
-  SET status = 'archived' 
-  WHERE expires_at < NOW() AND status = 'active';
+  SET status = 'archived'::poll_status
+  WHERE expires_at < NOW() AND status = 'active'::poll_status;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
 ```
+
+### Edge Functions Automation
+- **archive-polls**: Automatically archives expired polls (can be scheduled with cron)
 
 ## Indexes
 

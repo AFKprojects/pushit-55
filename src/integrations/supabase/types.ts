@@ -333,6 +333,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      archive_expired_polls: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      generate_poll_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_user_stats: {
         Args: { user_uuid: string }
         Returns: {
