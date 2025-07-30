@@ -28,20 +28,19 @@ interface DbSessionData {
   ended_at: string | null;
 }
 
-// Generate device fingerprint for session management
+// Generate cryptographically secure device ID for session management
 const getDeviceId = () => {
   if (typeof window === 'undefined') return 'server';
   
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  ctx?.fillText('fingerprint', 10, 10);
-  
-  return btoa(
-    navigator.userAgent + 
-    canvas.toDataURL() + 
-    (navigator.hardwareConcurrency || 0) +
-    (screen.width + screen.height)
-  ).slice(0, 32);
+  let deviceId = localStorage.getItem('secureDeviceId');
+  if (!deviceId) {
+    // Generate cryptographically secure device ID
+    const array = new Uint8Array(32);
+    crypto.getRandomValues(array);
+    deviceId = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+    localStorage.setItem('secureDeviceId', deviceId);
+  }
+  return deviceId;
 };
 
 export const useSessionManager = () => {

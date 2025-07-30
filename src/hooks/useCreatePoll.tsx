@@ -3,6 +3,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { validatePollQuestion, validatePollOptions, handleSecureError, RateLimiter, sanitizeInput } from '@/utils/security';
+
+// Rate limiter: max 5 polls per hour
+const pollRateLimiter = new RateLimiter(5, 60 * 60 * 1000);
 
 export const useCreatePoll = () => {
   const [question, setQuestion] = useState('');
@@ -27,9 +31,17 @@ export const useCreatePoll = () => {
   };
 
   const updateOption = (index: number, value: string) => {
+    // Sanitize input when updating options
+    const sanitized = sanitizeInput(value);
     const newOptions = [...options];
-    newOptions[index] = value;
+    newOptions[index] = sanitized;
     setOptions(newOptions);
+  };
+
+  const setQuestionSecure = (value: string) => {
+    // Sanitize input when updating question
+    const sanitized = sanitizeInput(value);
+    setQuestion(sanitized);
   };
 
   const clearForm = () => {
@@ -53,20 +65,33 @@ export const useCreatePoll = () => {
       return;
     }
 
-    const validOptions = options.filter(o => o.trim());
-    if (!question.trim()) {
+    // Client-side rate limiting
+    if (!pollRateLimiter.canPerform(user.id)) {
       toast({
-        title: "Error",
-        description: "Please provide a question for your poll",
+        title: "Rate limit exceeded",
+        description: "You can only create 5 polls per hour. Please wait before creating another poll.",
         variant: "destructive",
       });
       return;
     }
-    
-    if (validOptions.length < 2) {
+
+    // Validate inputs
+    const questionValidation = validatePollQuestion(question);
+    if (!questionValidation.isValid) {
       toast({
-        title: "Error",
-        description: "You must provide at least 2 non-empty answer options",
+        title: "Invalid question",
+        description: questionValidation.error,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const validOptions = options.filter(o => o.trim());
+    const optionsValidation = validatePollOptions(validOptions);
+    if (!optionsValidation.isValid) {
+      toast({
+        title: "Invalid options",
+        description: optionsValidation.error,
         variant: "destructive",
       });
       return;
@@ -75,6 +100,14 @@ export const useCreatePoll = () => {
     setIsSubmitting(true);
 
     try {
+      // Server-side validation through database function
+      const { error: validationError } = await supabase
+        .rpc('validate_poll_input', {
+          question_text: question.trim(),
+          option_texts: validOptions
+        });
+
+      if (validationError) throw validationError;
       // Set expiry to 24 hours from now
       const expiresAt = new Date();
       expiresAt.setHours(expiresAt.getHours() + 24);
@@ -120,10 +153,10 @@ export const useCreatePoll = () => {
       window.dispatchEvent(new CustomEvent('navigate-to-polls'));
       
     } catch (error: any) {
-      console.error('Error creating poll:', error);
+      const safeErrorMessage = handleSecureError(error, 'createPoll');
       toast({
         title: "Error",
-        description: error.message || "Failed to create poll",
+        description: safeErrorMessage,
         variant: "destructive",
       });
     } finally {
@@ -135,7 +168,7 @@ export const useCreatePoll = () => {
 
   return {
     question,
-    setQuestion,
+    setQuestion: setQuestionSecure,
     options,
     addOption,
     removeOption,

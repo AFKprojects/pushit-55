@@ -535,6 +535,10 @@ export type Database = {
           following_count: number
         }[]
       }
+      validate_poll_input: {
+        Args: { question_text: string; option_texts: string[] }
+        Returns: boolean
+      }
     }
     Enums: {
       poll_status: "active" | "archived"

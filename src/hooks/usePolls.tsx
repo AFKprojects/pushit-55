@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
+import { handleSecureError, RateLimiter } from '@/utils/security';
 
 interface Poll {
   id: string;
@@ -26,6 +27,10 @@ interface Poll {
 }
 
 type SortMode = 'new' | 'popular' | 'hot';
+
+// Rate limiters for different operations
+const voteRateLimiter = new RateLimiter(20, 60 * 1000); // 20 votes per minute
+const actionRateLimiter = new RateLimiter(10, 60 * 1000); // 10 save/hide actions per minute
 
 export const usePolls = () => {
   const [polls, setPolls] = useState<Poll[]>([]);
@@ -204,6 +209,16 @@ export const usePolls = () => {
       return;
     }
 
+    // Rate limiting for votes
+    if (!voteRateLimiter.canPerform(user.id)) {
+      toast({
+        title: "Rate limit exceeded",
+        description: "You're voting too quickly. Please slow down.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       // Check if user has already voted
       const { data: existingVote } = await supabase
@@ -247,10 +262,10 @@ export const usePolls = () => {
       // Refresh polls to show updated vote counts
       fetchPolls();
     } catch (error: any) {
-      console.error('Error voting:', error);
+      const safeErrorMessage = handleSecureError(error, 'voteOnPoll');
       toast({
         title: "Error",
-        description: "Failed to vote",
+        description: safeErrorMessage,
         variant: "destructive",
       });
     }
@@ -258,6 +273,16 @@ export const usePolls = () => {
 
   const savePoll = async (pollId: string) => {
     if (!user) return;
+
+    // Rate limiting for actions
+    if (!actionRateLimiter.canPerform(user.id)) {
+      toast({
+        title: "Rate limit exceeded",
+        description: "You're performing actions too quickly. Please slow down.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       const { error } = await supabase
@@ -276,10 +301,10 @@ export const usePolls = () => {
         description: "Poll saved for later voting",
       });
     } catch (error) {
-      console.error('Error saving poll:', error);
+      const safeErrorMessage = handleSecureError(error, 'savePoll');
       toast({
         title: "Error",
-        description: "Failed to save poll",
+        description: safeErrorMessage,
         variant: "destructive",
       });
     }
@@ -287,6 +312,16 @@ export const usePolls = () => {
 
   const hidePoll = async (pollId: string) => {
     if (!user) return;
+
+    // Rate limiting for actions
+    if (!actionRateLimiter.canPerform(user.id)) {
+      toast({
+        title: "Rate limit exceeded",
+        description: "You're performing actions too quickly. Please slow down.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       const { error } = await supabase
@@ -308,10 +343,10 @@ export const usePolls = () => {
         description: "Poll hidden",
       });
     } catch (error) {
-      console.error('Error hiding poll:', error);
+      const safeErrorMessage = handleSecureError(error, 'hidePoll');
       toast({
         title: "Error",
-        description: "Failed to hide poll",
+        description: safeErrorMessage,
         variant: "destructive",
       });
     }
