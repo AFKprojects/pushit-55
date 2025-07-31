@@ -260,7 +260,7 @@ const Statistics = () => {
           .select('question, boost_count_cache')
           .order('boost_count_cache', { ascending: false })
           .limit(1)
-          .single();
+          .maybeSingle();
 
         const yearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
         const countryRankingAllTime = await getCountryStats(yearAgo.toISOString());
