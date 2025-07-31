@@ -1,0 +1,31 @@
+﻿Name,View Type,Section,Description,Interactions,Related Components,Files & media,Sub-item,Parent item
+myapp_mypolls_created_subtab,Subtab,My App,,,,MyPolls_created.jpg,,mypolls_tab (https://www.notion.so/mypolls_tab-24035605529c801ebe9cda11776ab9d1?pvs=21)
+myapp_mypolls_voted_subtab,Subtab,My App,,,,MyPolls_voted.jpg,,mypolls_tab (https://www.notion.so/mypolls_tab-24035605529c801ebe9cda11776ab9d1?pvs=21)
+myapp_mypolls_saved_subtab,Subtab,My App,,,,MyPolls_saved.jpg,,mypolls_tab (https://www.notion.so/mypolls_tab-24035605529c801ebe9cda11776ab9d1?pvs=21)
+myapp_profile_account_subtab,Subtab,My App,,,,Account.jpg,,profile_tab (https://www.notion.so/profile_tab-24035605529c8049b019eb3b166c6f48?pvs=21)
+myapp_profile_settings_subtab,Subtab,My App,,,,Settings.jpg,,profile_tab (https://www.notion.so/profile_tab-24035605529c8049b019eb3b166c6f48?pvs=21)
+modals,,,,,,,"polview_modal (https://www.notion.so/polview_modal-24035605529c80f692e4d1a42263b601?pvs=21), profile_modal (https://www.notion.so/profile_modal-24035605529c8033a3b4c48467fa6a44?pvs=21)",system views (https://www.notion.so/system-views-24035605529c80dba524d19b2f42fdc5?pvs=21)
+polview_modal,Modal,System Views,,,,modal.jpg,,modals (https://www.notion.so/modals-24035605529c8026a5b6e8a15f47d871?pvs=21)
+profile_modal,Modal,System Views,,,,user_profile_modal.jpg,,modals (https://www.notion.so/modals-24035605529c8026a5b6e8a15f47d871?pvs=21)
+errors,,,,,,,polladd_error (https://www.notion.so/polladd_error-24035605529c80e4898ee6d8761f5355?pvs=21),system views (https://www.notion.so/system-views-24035605529c80dba524d19b2f42fdc5?pvs=21)
+polladd_error,Error,System Views,,,,,,errors (https://www.notion.so/errors-24035605529c80e68014cb04f5faa138?pvs=21)
+successes,,,,,,,"polladd_success (https://www.notion.so/polladd_success-24035605529c80c59b7cecb027f1a0d9?pvs=21), vote_success (https://www.notion.so/vote_success-24035605529c803790e0ee9870875303?pvs=21)",system views (https://www.notion.so/system-views-24035605529c80dba524d19b2f42fdc5?pvs=21)
+vote_success,Toast,System Views,,,,,,successes (https://www.notion.so/successes-24035605529c80329036dae390061266?pvs=21)
+polladd_success,Toast,System Views,,,,,,successes (https://www.notion.so/successes-24035605529c80329036dae390061266?pvs=21)
+real time,,,,,,,"countdown_overlay (https://www.notion.so/countdown_overlay-24035605529c803285a6eb732c184cc2?pvs=21), counter_overlay (https://www.notion.so/counter_overlay-24035605529c80acab65cf7b607613d2?pvs=21)",system views (https://www.notion.so/system-views-24035605529c80dba524d19b2f42fdc5?pvs=21)
+countdown_overlay,System_Overlay,System Views,,,,mainbutton_countdown.jpg,,real time (https://www.notion.so/real-time-24035605529c80189432f3ecc4b1b53c?pvs=21)
+counter_overlay,System_Overlay,System Views,,,,mainbutton_counter.jpg,,real time (https://www.notion.so/real-time-24035605529c80189432f3ecc4b1b53c?pvs=21)
+button_page,Main,The Button,,,,521617907_4088632441464743_6073163003109153766_n.jpg,,
+feed_page,Main,Vote,,,,,"feed_live_tab (https://www.notion.so/feed_live_tab-24035605529c8003a9ecf3a2084795dd?pvs=21), feed_archive_tab (https://www.notion.so/feed_archive_tab-24035605529c8013bbf6e15e3f338f8c?pvs=21)",
+feed_live_tab,Main,Vote,,,,live.jpg,,feed_page (https://www.notion.so/feed_page-24035605529c804bb72fe66b0643579d?pvs=21)
+feed_archive_tab,Tab,Vote,,,,archive.jpg,,feed_page (https://www.notion.so/feed_page-24035605529c804bb72fe66b0643579d?pvs=21)
+create_page,Main,Create,,,,"create1.jpg, create2.jpg",,
+statistics_page,Main,Stats,,,,,"statistics_daily_tab (https://www.notion.so/statistics_daily_tab-24035605529c804a9d4bf54ab2ec50ef?pvs=21), statistics_monthly_tab (https://www.notion.so/statistics_monthly_tab-24035605529c8088896dee73e43ec508?pvs=21), statistics_hof_tab (https://www.notion.so/statistics_hof_tab-24035605529c800fb491df368756997b?pvs=21)",
+statistics_daily_tab,Tab,Stats,,,,daily.jpg,,statistics_page (https://www.notion.so/statistics_page-24035605529c80cc878ef4c1c34f758c?pvs=21)
+statistics_monthly_tab,Tab,Stats,,,,monthly.jpg,,statistics_page (https://www.notion.so/statistics_page-24035605529c80cc878ef4c1c34f758c?pvs=21)
+statistics_hof_tab,Tab,Stats,,,,hof.jpg,,statistics_page (https://www.notion.so/statistics_page-24035605529c80cc878ef4c1c34f758c?pvs=21)
+myapp_page,Main,My App,,,,,"mypolls_tab (https://www.notion.so/mypolls_tab-24035605529c801ebe9cda11776ab9d1?pvs=21), community_tab (https://www.notion.so/community_tab-24035605529c806a94a6d6ff732928a4?pvs=21), profile_tab (https://www.notion.so/profile_tab-24035605529c8049b019eb3b166c6f48?pvs=21)",
+system views,,,,,,,"modals (https://www.notion.so/modals-24035605529c8026a5b6e8a15f47d871?pvs=21), real time (https://www.notion.so/real-time-24035605529c80189432f3ecc4b1b53c?pvs=21), successes (https://www.notion.so/successes-24035605529c80329036dae390061266?pvs=21), errors (https://www.notion.so/errors-24035605529c80e68014cb04f5faa138?pvs=21)",
+profile_tab,Tab,My App,,,,,"myapp_profile_account_subtab (https://www.notion.so/myapp_profile_account_subtab-24035605529c80048760c5d837c441b9?pvs=21), myapp_profile_settings_subtab (https://www.notion.so/myapp_profile_settings_subtab-24035605529c80a0b2c6def379051e77?pvs=21)",myapp_page (https://www.notion.so/myapp_page-24035605529c8079bf52f7ba764446c2?pvs=21)
+community_tab,Tab,My App,,,,Community.jpg,,myapp_page (https://www.notion.so/myapp_page-24035605529c8079bf52f7ba764446c2?pvs=21)
+mypolls_tab,Tab,My App,,,,,"myapp_mypolls_created_subtab (https://www.notion.so/myapp_mypolls_created_subtab-24035605529c80dabb6fc27dc612d72d?pvs=21), myapp_mypolls_voted_subtab (https://www.notion.so/myapp_mypolls_voted_subtab-24035605529c80f2a7b6dc073bc2e2ff?pvs=21), myapp_mypolls_saved_subtab (https://www.notion.so/myapp_mypolls_saved_subtab-24035605529c80a29aa8e08903734372?pvs=21)",myapp_page (https://www.notion.so/myapp_page-24035605529c8079bf52f7ba764446c2?pvs=21)

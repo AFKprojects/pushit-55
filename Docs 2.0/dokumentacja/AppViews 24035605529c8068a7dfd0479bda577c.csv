@@ -1,0 +1,31 @@
+﻿Name,View Type,Section,Description,Interactions,Related Components,Files & media
+myapp_mypolls_created_subtab,Subtab,My App,,,,MyPolls_created.jpg
+myapp_mypolls_voted_subtab,Subtab,My App,,,,MyPolls_voted.jpg
+myapp_mypolls_saved_subtab,Subtab,My App,,,,MyPolls_saved.jpg
+myapp_profile_account_subtab,Subtab,My App,,,,Account.jpg
+myapp_profile_settings_subtab,Subtab,My App,,,,Settings.jpg
+modals,,,,,,
+polview_modal,Modal,System Views,,,,modal.jpg
+profile_modal,Modal,System Views,,,,user_profile_modal.jpg
+errors,,,,,,
+polladd_error,Error,System Views,,,,
+successes,,,,,,
+vote_success,Toast,System Views,,,,
+polladd_success,Toast,System Views,,,,
+real time,,,,,,
+countdown_overlay,System_Overlay,System Views,,,,mainbutton_countdown.jpg
+counter_overlay,System_Overlay,System Views,,,,mainbutton_counter.jpg
+button_page,Main,The Button,,,,521617907_4088632441464743_6073163003109153766_n.jpg
+feed_page,Main,Vote,,,,
+feed_live_tab,Main,Vote,,,,live.jpg
+feed_archive_tab,Tab,Vote,,,,archive.jpg
+create_page,Main,Create,,,,"create1.jpg, create2.jpg"
+statistics_page,Main,Stats,,,,
+statistics_daily_tab,Tab,Stats,,,,daily.jpg
+statistics_monthly_tab,Tab,Stats,,,,monthly.jpg
+statistics_hof_tab,Tab,Stats,,,,hof.jpg
+myapp_page,Main,My App,,,,
+system views,,,,,,
+profile_tab,Tab,My App,,,,
+community_tab,Tab,My App,,,,Community.jpg
+mypolls_tab,Tab,My App,,,,
