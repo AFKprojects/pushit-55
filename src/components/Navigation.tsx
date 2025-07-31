@@ -5,9 +5,10 @@ import { cn } from '@/lib/utils';
 interface NavigationProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
+  'data-onboarding'?: string;
 }
 
-const Navigation = ({ activeTab, onTabChange }: NavigationProps) => {
+const Navigation = ({ activeTab, onTabChange, ...props }: NavigationProps) => {
   const tabs = [
     { id: 'main', icon: Circle, label: 'The Button' },
     { id: 'polls', icon: TrendingUp, label: 'Vote' },
@@ -17,7 +18,7 @@ const Navigation = ({ activeTab, onTabChange }: NavigationProps) => {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-black/30 backdrop-blur-md border-t border-blue-500/20 px-4 py-2 z-50">
+    <div className="fixed bottom-0 left-0 right-0 bg-black/30 backdrop-blur-md border-t border-blue-500/20 px-4 py-2 z-50" {...props}>
       <div className="flex justify-around max-w-md mx-auto">
         {tabs.map((tab) => {
           const Icon = tab.icon;

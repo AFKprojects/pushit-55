@@ -5,10 +5,11 @@ import Statistics from '../components/Statistics';
 import Polls from '../components/Polls';
 import Create from '../components/Create';
 import MyApp from '../components/MyApp';
+import Onboarding from '../components/Onboarding';
 import { useAuth } from '../hooks/useAuth';
 import { useSessionManager } from '../hooks/useSessionManager';
 import { Button } from '@/components/ui/button';
-import { LogIn } from 'lucide-react';
+import { LogIn, HelpCircle } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import PollModal from '@/components/PollModal';
 import UserModal from '@/components/UserModal';
@@ -17,11 +18,20 @@ import { usePollModal } from '@/hooks/usePollModal';
 const Index = () => {
   const [activeTab, setActiveTab] = useState('main');
   const [isButtonActivated, setIsButtonActivated] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const { user } = useAuth();
   const { activeSessionCount, startSession, endSession } = useSessionManager();
   const navigate = useNavigate();
   const params = useParams();
   const { openModal } = usePollModal();
+
+  // Check if user has seen onboarding
+  useEffect(() => {
+    const hasSeenOnboarding = localStorage.getItem('hasSeenOnboarding');
+    if (!hasSeenOnboarding) {
+      setShowOnboarding(true);
+    }
+  }, []);
 
   // Ensure consistent dark theme appearance
   useEffect(() => {
@@ -51,6 +61,16 @@ const Index = () => {
     if (user) {
       endSession();
     }
+  };
+
+  const handleOnboardingComplete = () => {
+    setShowOnboarding(false);
+    localStorage.setItem('hasSeenOnboarding', 'true');
+  };
+
+  const startOnboarding = () => {
+    setActiveTab('main');
+    setShowOnboarding(true);
   };
 
   const renderContent = () => {
@@ -84,17 +104,26 @@ const Index = () => {
       default:
         return (
           <div className="flex-1 flex flex-col items-center justify-center px-6 relative">
-            {!user && (
-              <div className="absolute top-6 right-6">
+            <div className="absolute top-6 right-6 flex gap-3">
+              <Button
+                onClick={startOnboarding}
+                variant="outline"
+                className="border-blue-500/30 text-blue-300 hover:text-white hover:bg-blue-500/20"
+              >
+                <HelpCircle size={18} className="mr-2" />
+                Pomoc
+              </Button>
+              {!user && (
                 <Button
+                  data-onboarding="login-button"
                   onClick={() => navigate('/auth')}
                   className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-medium"
                 >
                   <LogIn size={18} className="mr-2" />
                   Login
                 </Button>
-              </div>
-            )}
+              )}
+            </div>
 
             <div className="text-center mb-12">
               <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-400 to-yellow-500 bg-clip-text text-transparent mb-4">
@@ -108,7 +137,7 @@ const Index = () => {
               </p>
             </div>
 
-            <div className="relative">
+            <div className="relative" data-onboarding="main-button">
               <HoldButton 
                 onHoldStart={handleHoldStart}
                 onHoldEnd={handleHoldEnd}
@@ -150,9 +179,19 @@ const Index = () => {
       <div className="flex flex-col h-screen">
         {renderContent()}
         
-        <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
+        <Navigation 
+          activeTab={activeTab} 
+          onTabChange={setActiveTab}
+          data-onboarding="navigation"
+        />
         <PollModal />
         <UserModal />
+        <Onboarding
+          isVisible={showOnboarding}
+          onComplete={handleOnboardingComplete}
+          onTabChange={setActiveTab}
+          activeTab={activeTab}
+        />
       </div>
       
       <style>{`
