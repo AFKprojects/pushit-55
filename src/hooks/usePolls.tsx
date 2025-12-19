@@ -70,8 +70,11 @@ export const usePolls = () => {
         console.warn('Cleanup function failed, continuing with fetch:', cleanupError);
       }
       
-      // Fetch active polls with options
-      const { data: pollsData, error: pollsError } = await supabase
+      // Fetch active polls with options - use different sorting based on sortMode
+      // For 'hot' mode, we sort by boost_count_cache, total_votes_cache, created_at
+      // For 'new' mode, we sort by created_at
+      // For 'popular' mode, we sort by total_votes_cache
+      let pollsQuery = supabase
         .from('polls')
         .select(`
           id,
@@ -79,7 +82,9 @@ export const usePolls = () => {
           creator_username,
           status,
           total_votes,
+          total_votes_cache,
           boost_count,
+          boost_count_cache,
           expires_at,
           created_at,
           poll_options (
@@ -89,7 +94,24 @@ export const usePolls = () => {
           )
         `)
         .eq('status', 'active')
-        .order('created_at', { ascending: false });
+        .gt('expires_at', new Date().toISOString());
+      
+      // Apply DB-level sorting based on current sort mode
+      if (sortMode === 'hot') {
+        pollsQuery = pollsQuery
+          .order('boost_count_cache', { ascending: false })
+          .order('total_votes_cache', { ascending: false })
+          .order('created_at', { ascending: false });
+      } else if (sortMode === 'popular') {
+        pollsQuery = pollsQuery
+          .order('total_votes_cache', { ascending: false })
+          .order('created_at', { ascending: false });
+      } else {
+        // 'new' - default
+        pollsQuery = pollsQuery.order('created_at', { ascending: false });
+      }
+      
+      const { data: pollsData, error: pollsError } = await pollsQuery;
 
       // Fetch archived polls with options
       const { data: archivedData, error: archivedError } = await supabase
@@ -155,10 +177,13 @@ export const usePolls = () => {
               percentage: actualTotalVotes > 0 ? Math.round((opt.votes / actualTotalVotes) * 100) : 0
             }));
 
-            // Calculate hot score based on votes and pushes with time decay
+            // Use boost_count_cache for hot sorting (already sorted by DB)
+            const boostCount = poll.boost_count_cache ?? poll.boost_count ?? 0;
+            
+            // Calculate hot score for display purposes
             const ageInHours = (Date.now() - new Date(poll.created_at).getTime()) / (1000 * 60 * 60);
             const timeFactor = Math.max(0.1, 1 / (1 + ageInHours * 0.1)); // Decay over time
-            const hotScore = (actualTotalVotes + (poll.boost_count || 0) * 3) * timeFactor;
+            const hotScore = (actualTotalVotes + boostCount * 3) * timeFactor;
 
             return {
               id: poll.id,
@@ -166,7 +191,7 @@ export const usePolls = () => {
               creator_username: poll.creator_username,
               status: poll.status,
               total_votes: actualTotalVotes, // Use calculated total instead of stored value
-              boostCount: poll.boost_count || 0,
+              boostCount: boostCount,
               expires_at: poll.expires_at,
               created_at: poll.created_at,
               options,
@@ -182,10 +207,9 @@ export const usePolls = () => {
       const processedPolls = processPolls(pollsData || []);
       const processedArchivedPolls = processPolls(archivedData || []);
 
-      // Sort polls based on current sort mode
-      const sortedPolls = sortPolls(processedPolls, sortMode);
-
-      setPolls(sortedPolls);
+      // For hot/popular/new: DB already sorted, just set directly
+      // Only re-sort if needed for archived or client-side filtering changed order
+      setPolls(processedPolls);
       setArchivedPolls(processedArchivedPolls);
     } catch (error) {
       console.error('Error fetching polls:', error);
@@ -368,11 +392,16 @@ export const usePolls = () => {
     }
   };
 
-  // Update sort mode and re-sort polls
+  // Update sort mode and refetch polls with new DB sorting
   const updateSortMode = (mode: SortMode) => {
     setSortMode(mode);
-    setPolls(prev => sortPolls(prev, mode));
+    // Refetch will use the new sortMode for DB-level ordering
   };
+
+  // Refetch when sortMode changes
+  useEffect(() => {
+    fetchPolls();
+  }, [sortMode]);
 
   useEffect(() => {
     fetchPolls();
