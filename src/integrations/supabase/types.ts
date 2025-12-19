@@ -641,6 +641,20 @@ export type Database = {
       cleanup_button_hold_sessions: { Args: never; Returns: undefined }
       cleanup_poll_vote_sessions: { Args: never; Returns: undefined }
       generate_poll_id: { Args: never; Returns: string }
+      get_hot_polls: {
+        Args: { limit_count?: number }
+        Returns: {
+          boost_count_cache: number
+          created_at: string
+          creator_username: string
+          expires_at: string
+          id: string
+          question: string
+          status: string
+          total_votes: number
+          total_votes_cache: number
+        }[]
+      }
       get_user_stats: {
         Args: { user_uuid: string }
         Returns: {
