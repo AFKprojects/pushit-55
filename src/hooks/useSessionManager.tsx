@@ -61,20 +61,20 @@ export const useSessionManager = () => {
   const cleanupInterval = useRef<NodeJS.Timeout | null>(null);
   const deviceId = useRef<string>(getDeviceId());
 
-  // Fetch current active sessions using last_heartbeat
+  // Fetch current active sessions using last_heartbeat (10s timeout)
   const fetchActiveSessions = useCallback(async () => {
     try {
-      const fifteenSecondsAgo = new Date(Date.now() - 15000).toISOString();
+      const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
       
       const { data, error } = await supabase
         .from('button_holds')
         .select('*')
         .eq('is_active', true)
-        .gt('last_heartbeat', fifteenSecondsAgo);
+        .gt('last_heartbeat', tenSecondsAgo);
       
       if (!error && data) {
         setActiveSessions(data as SessionData[]);
-        console.log('📊 Active sessions fetched:', data.length, 'newer than', fifteenSecondsAgo);
+        console.log('📊 Active sessions fetched:', data.length, 'newer than', tenSecondsAgo);
       } else {
         console.error('Error fetching sessions:', error);
       }
@@ -83,17 +83,17 @@ export const useSessionManager = () => {
     }
   }, []);
 
-  // Clean up inactive sessions using last_heartbeat
+  // Clean up inactive sessions using last_heartbeat (10s timeout)
   const cleanupInactiveSessions = useCallback(async () => {
-    const fifteenSecondsAgo = new Date(Date.now() - 15000).toISOString();
+    const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
     
     try {
-      console.log('🧹 Starting cleanup of sessions with last_heartbeat older than:', fifteenSecondsAgo);
+      console.log('🧹 Starting cleanup of sessions with last_heartbeat older than:', tenSecondsAgo);
       
       const { data: deleted, error } = await supabase
         .from('button_holds')
         .delete()
-        .lt('last_heartbeat', fifteenSecondsAgo)
+        .lt('last_heartbeat', tenSecondsAgo)
         .select('*');
       
       if (error) {
@@ -286,7 +286,7 @@ export const useSessionManager = () => {
     // Initial fetch
     fetchActiveSessions();
 
-    // Setup cleanup interval (every 5 seconds with 15-second buffer)
+    // Setup cleanup interval (every 5 seconds with 10-second timeout)
     cleanupInterval.current = setInterval(cleanupInactiveSessions, 5000);
 
     // Setup real-time subscription
