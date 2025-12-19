@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -508,35 +508,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      archive_expired_polls: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      cleanup_button_hold_sessions: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      cleanup_poll_vote_sessions: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      generate_poll_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      archive_expired_polls: { Args: never; Returns: undefined }
+      cleanup_button_hold_sessions: { Args: never; Returns: undefined }
+      cleanup_poll_vote_sessions: { Args: never; Returns: undefined }
+      generate_poll_id: { Args: never; Returns: string }
       get_user_stats: {
         Args: { user_uuid: string }
         Returns: {
-          created_polls: number
-          votes_cast: number
-          votes_received: number
           boosts_received: number
+          created_polls: number
           followers_count: number
           following_count: number
+          votes_cast: number
+          votes_received: number
         }[]
       }
       validate_poll_input: {
-        Args: { question_text: string; option_texts: string[] }
+        Args: { option_texts: string[]; question_text: string }
         Returns: boolean
       }
     }
