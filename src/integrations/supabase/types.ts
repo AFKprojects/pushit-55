@@ -256,6 +256,7 @@ export type Database = {
           expires_at: string | null
           id: string
           is_anonymous: boolean | null
+          push_count: number
           question: string
           status: Database["public"]["Enums"]["poll_status"] | null
           total_votes: number | null
@@ -272,6 +273,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           is_anonymous?: boolean | null
+          push_count?: number
           question: string
           status?: Database["public"]["Enums"]["poll_status"] | null
           total_votes?: number | null
@@ -288,6 +290,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           is_anonymous?: boolean | null
+          push_count?: number
           question?: string
           status?: Database["public"]["Enums"]["poll_status"] | null
           total_votes?: number | null
@@ -467,6 +470,7 @@ export type Database = {
           id: string
           option_id: string
           poll_id: string
+          updated_at: string | null
           user_id: string
           voted_at: string | null
         }
@@ -475,6 +479,7 @@ export type Database = {
           id?: string
           option_id: string
           poll_id: string
+          updated_at?: string | null
           user_id: string
           voted_at?: string | null
         }
@@ -483,6 +488,7 @@ export type Database = {
           id?: string
           option_id?: string
           poll_id?: string
+          updated_at?: string | null
           user_id?: string
           voted_at?: string | null
         }
