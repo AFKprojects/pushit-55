@@ -44,6 +44,8 @@ const PollModal = () => {
   const [votingOption, setVotingOption] = useState<string | null>(null);
   const [countdownSeconds, setCountdownSeconds] = useState(3);
   const [savedPolls, setSavedPolls] = useState<string[]>([]);
+  const [isEditingVote, setIsEditingVote] = useState(false);
+  const [hasEditedVote, setHasEditedVote] = useState(false);
 
   const calculateTimeLeft = (expiresAt: string): string => {
     const now = new Date();
@@ -156,6 +158,11 @@ const PollModal = () => {
     }
   };
 
+  const handleEditVote = () => {
+    if (!user || !poll?.is_active || hasEditedVote) return;
+    setIsEditingVote(true);
+  };
+
   const handleVoteStart = (optionId: string) => {
     if (!user) {
       toast({
@@ -174,6 +181,9 @@ const PollModal = () => {
       });
       return;
     }
+
+    // Don't allow voting if already voted and not in edit mode
+    if (poll.hasVoted && !isEditingVote) return;
 
     setVoting(true);
     setVotingOption(optionId);
@@ -220,9 +230,15 @@ const PollModal = () => {
       if (voteError) throw voteError;
 
       toast({
-        title: "Vote Submitted!",
-        description: "Your vote has been recorded.",
+        title: isEditingVote ? "Vote Updated!" : "Vote Submitted!",
+        description: isEditingVote ? "Your vote has been changed." : "Your vote has been recorded.",
       });
+
+      // Mark as edited if was in edit mode
+      if (isEditingVote) {
+        setHasEditedVote(true);
+        setIsEditingVote(false);
+      }
 
       // Refresh poll data
       await fetchPoll();
@@ -360,6 +376,9 @@ const PollModal = () => {
   // Fetch poll when modal opens
   useEffect(() => {
     if (isOpen && pollId) {
+      // Reset edit state for new poll
+      setIsEditingVote(false);
+      setHasEditedVote(false);
       fetchPoll();
     }
   }, [isOpen, pollId]);
@@ -463,9 +482,9 @@ const PollModal = () => {
               {/* Options */}
               <div className="space-y-3 mb-6">
                 {poll.options.map((option, index) => {
-                  const isUserVote = poll.userVote === option.option_text;
+                  const isUserVote = poll.userVote === option.option_text && !isEditingVote;
                   const isVotingThis = votingOption === option.id;
-                  const canVote = user && poll.is_active && !poll.hasVoted;
+                  const canVote = user && poll.is_active && (!poll.hasVoted || isEditingVote);
 
                   return (
                     <div
@@ -536,14 +555,15 @@ const PollModal = () => {
 
                 {user && (
                   <div className="flex gap-2 flex-wrap">
-                    {poll.hasVoted && (
+                    {poll.hasVoted && !hasEditedVote && poll.is_active && (
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleVoteStart("edit")}
+                        onClick={handleEditVote}
+                        disabled={isEditingVote}
                         className="border-orange-500/30 text-orange-300 hover:bg-orange-500/10"
                       >
-                        Edit Vote
+                        {isEditingVote ? 'Select new vote' : 'Edit Vote'}
                       </Button>
                     )}
                     {poll.hasVoted && poll.is_active && (
