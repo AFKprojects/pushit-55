@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_events: {
+        Row: {
+          country: string
+          id: string
+          metadata: Json | null
+          poll_id: string | null
+          source: string
+          timestamp_utc: string
+          user_id: string
+        }
+        Insert: {
+          country: string
+          id?: string
+          metadata?: Json | null
+          poll_id?: string | null
+          source: string
+          timestamp_utc?: string
+          user_id: string
+        }
+        Update: {
+          country?: string
+          id?: string
+          metadata?: Json | null
+          poll_id?: string | null
+          source?: string
+          timestamp_utc?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_events_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "polls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       badges: {
         Row: {
           badge_name: string
@@ -185,6 +230,78 @@ export type Database = {
           },
         ]
       }
+      poll_response_options: {
+        Row: {
+          option_id: string
+          response_id: string
+        }
+        Insert: {
+          option_id: string
+          response_id: string
+        }
+        Update: {
+          option_id?: string
+          response_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poll_response_options_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "poll_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "poll_response_options_response_id_fkey"
+            columns: ["response_id"]
+            isOneToOne: false
+            referencedRelation: "poll_responses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      poll_responses: {
+        Row: {
+          country: string
+          id: string
+          poll_id: string
+          source: string
+          submitted_at: string
+          user_id: string
+        }
+        Insert: {
+          country: string
+          id?: string
+          poll_id: string
+          source?: string
+          submitted_at?: string
+          user_id: string
+        }
+        Update: {
+          country?: string
+          id?: string
+          poll_id?: string
+          source?: string
+          submitted_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poll_responses_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "polls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "poll_responses_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       poll_vote_holds: {
         Row: {
           device_id: string | null
@@ -306,6 +423,8 @@ export type Database = {
           created_at: string | null
           email: string | null
           id: string
+          is_premium: boolean
+          last_button_action_at: string | null
           updated_at: string | null
           username: string | null
         }
@@ -314,6 +433,8 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           id: string
+          is_premium?: boolean
+          last_button_action_at?: string | null
           updated_at?: string | null
           username?: string | null
         }
@@ -322,6 +443,8 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           id?: string
+          is_premium?: boolean
+          last_button_action_at?: string | null
           updated_at?: string | null
           username?: string | null
         }
