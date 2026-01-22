@@ -89,51 +89,85 @@ const Statistics = () => {
     'Unknown': 'XX'
   };
 
-  const getCountryStats = async (timeFilter: string) => {
+  // Fetch country rankings using new RPC functions based on activity_events
+  // Source: country_button_counted events with 3-min cooldown per user
+  const getCountryStatsDaily = async (): Promise<CountryStats[]> => {
     try {
-      console.log('🔍 Fetching country stats with filter:', timeFilter);
+      console.log('🔍 Fetching daily country ranking from activity_events');
       
-      // Get all button_holds records regardless of ended_at to include current sessions
-      const { data: buttonPresses, error } = await supabase
-        .from('button_holds')
-        .select('country, started_at, ended_at')
-        .gte('started_at', timeFilter);
-
-      console.log('📊 Raw button_holds data (all records):', buttonPresses);
-      console.log('❌ Button_holds error:', error);
-
+      const { data, error } = await supabase.rpc('get_country_rank_daily');
+      
       if (error) {
-        console.error('Error fetching country stats:', error);
+        console.error('Error fetching daily country stats:', error);
         return [];
       }
-
-      if (!buttonPresses || buttonPresses.length === 0) {
-        console.log('📭 No button_holds records found');
+      
+      if (!data || data.length === 0) {
+        console.log('📭 No country ranking data for daily');
         return [];
       }
-
-      const countryCounts: { [key: string]: number } = {};
-      buttonPresses?.forEach(press => {
-        if (press.country) {
-          const country = press.country;
-          countryCounts[country] = (countryCounts[country] || 0) + 1;
-        }
-      });
-
-      console.log('📈 Country counts:', countryCounts);
-
-      const results = Object.entries(countryCounts)
-        .sort(([,a], [,b]) => b - a)
-        .map(([country, count]) => ({
-          country,
-          code: countryCodeMap[country] || 'XX',
-          count
-        }));
-
-      console.log('🏁 Final country results:', results);
-      return results;
+      
+      return data.map((row: { country: string; count: number }) => ({
+        country: row.country,
+        code: countryCodeMap[row.country] || 'XX',
+        count: Number(row.count)
+      }));
     } catch (error) {
-      console.error('Error in getCountryStats:', error);
+      console.error('Error in getCountryStatsDaily:', error);
+      return [];
+    }
+  };
+
+  const getCountryStatsMonthly = async (): Promise<CountryStats[]> => {
+    try {
+      console.log('🔍 Fetching monthly country ranking from activity_events');
+      
+      const { data, error } = await supabase.rpc('get_country_rank_monthly');
+      
+      if (error) {
+        console.error('Error fetching monthly country stats:', error);
+        return [];
+      }
+      
+      if (!data || data.length === 0) {
+        console.log('📭 No country ranking data for monthly');
+        return [];
+      }
+      
+      return data.map((row: { country: string; count: number }) => ({
+        country: row.country,
+        code: countryCodeMap[row.country] || 'XX',
+        count: Number(row.count)
+      }));
+    } catch (error) {
+      console.error('Error in getCountryStatsMonthly:', error);
+      return [];
+    }
+  };
+
+  const getCountryStatsAllTime = async (): Promise<CountryStats[]> => {
+    try {
+      console.log('🔍 Fetching all-time country ranking from activity_events');
+      
+      const { data, error } = await supabase.rpc('get_country_rank_all_time');
+      
+      if (error) {
+        console.error('Error fetching all-time country stats:', error);
+        return [];
+      }
+      
+      if (!data || data.length === 0) {
+        console.log('📭 No country ranking data for all-time');
+        return [];
+      }
+      
+      return data.map((row: { country: string; count: number }) => ({
+        country: row.country,
+        code: countryCodeMap[row.country] || 'XX',
+        count: Number(row.count)
+      }));
+    } catch (error) {
+      console.error('Error in getCountryStatsAllTime:', error);
       return [];
     }
   };
@@ -221,8 +255,9 @@ const Statistics = () => {
           .gt('expires_at', now.toISOString());
 
         const maxSimultaneous24h = await calculateMaxSimultaneous(oneDayAgo.toISOString());
-        const countryRanking = await getCountryStats(oneDayAgo.toISOString());
-        console.log('Daily country ranking:', countryRanking);
+        // Use new RPC for country rankings based on activity_events with cooldown
+        const countryRanking = await getCountryStatsDaily();
+        console.log('Daily country ranking (from activity_events):', countryRanking);
 
         setDailyStats({
           pollsCreated24h: pollsCreated24h || 0,
@@ -244,7 +279,8 @@ const Statistics = () => {
           .gte('voted_at', oneMonthAgo.toISOString());
 
         const maxSimultaneousMonth = await calculateMaxSimultaneous(oneMonthAgo.toISOString());
-        const countryRankingMonth = await getCountryStats(oneMonthAgo.toISOString());
+        // Use new RPC for monthly country rankings
+        const countryRankingMonth = await getCountryStatsMonthly();
 
         setMonthlyStats({
           pollsCreatedMonth: pollsCreatedMonth || 0,
@@ -276,8 +312,8 @@ const Statistics = () => {
           .limit(1)
           .maybeSingle();
 
-        const yearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
-        const countryRankingAllTime = await getCountryStats(yearAgo.toISOString());
+        // Use new RPC for all-time country rankings
+        const countryRankingAllTime = await getCountryStatsAllTime();
 
         setAllTimeStats({
           totalUsers: totalUsers || 0,

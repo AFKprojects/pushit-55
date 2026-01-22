@@ -238,6 +238,7 @@ export const useSessionManager = () => {
   }, [user, country, isHolding, sendHeartbeat, fetchActiveSessions]);
 
   // End current session - mark as inactive (NOT delete) for statistics
+  // Also record country button event with 3-min cooldown for country rankings
   const endSession = useCallback(async () => {
     if (!currentSessionId) {
       console.log('🛑 End session called but no current session');
@@ -270,6 +271,28 @@ export const useSessionManager = () => {
         console.log('✅ Session ended successfully:', currentSessionId);
       }
 
+      // Record country button event with 3-min cooldown (for country rankings)
+      // This is called at session end, so user completed at least the hold action
+      if (user) {
+        try {
+          const { data: countryResult, error: countryError } = await supabase
+            .rpc('record_country_button_event', { user_uuid: user.id });
+          
+          if (countryError) {
+            console.error('❌ Error recording country event:', countryError);
+          } else if (countryResult && countryResult.length > 0) {
+            const result = countryResult[0];
+            if (result.recorded) {
+              console.log('🌍 Country event recorded for ranking');
+            } else {
+              console.log('🕐 Country cooldown active, remaining:', result.cooldown_remaining_seconds, 's');
+            }
+          }
+        } catch (countryErr) {
+          console.error('Country event error:', countryErr);
+        }
+      }
+
       setCurrentSessionId(null);
       setIsHolding(false);
       
@@ -278,7 +301,7 @@ export const useSessionManager = () => {
     } catch (error) {
       console.error('Error ending session:', error);
     }
-  }, [currentSessionId, fetchActiveSessions]);
+  }, [currentSessionId, user, fetchActiveSessions]);
 
   // Initialize and setup
   useEffect(() => {

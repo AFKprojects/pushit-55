@@ -163,6 +163,33 @@ export type Database = {
           },
         ]
       }
+      guest_previews: {
+        Row: {
+          created_at: string | null
+          device_id: string
+          id: string
+          preview_count: number
+          preview_date: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          device_id: string
+          id?: string
+          preview_count?: number
+          preview_date?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          device_id?: string
+          id?: string
+          preview_count?: number
+          preview_date?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       hidden_polls: {
         Row: {
           hidden_at: string | null
@@ -651,6 +678,30 @@ export type Database = {
       cleanup_button_hold_sessions: { Args: never; Returns: undefined }
       cleanup_poll_vote_sessions: { Args: never; Returns: undefined }
       generate_poll_id: { Args: never; Returns: string }
+      get_country_rank_all_time: {
+        Args: never
+        Returns: {
+          count: number
+          country: string
+          rank: number
+        }[]
+      }
+      get_country_rank_daily: {
+        Args: never
+        Returns: {
+          count: number
+          country: string
+          rank: number
+        }[]
+      }
+      get_country_rank_monthly: {
+        Args: never
+        Returns: {
+          count: number
+          country: string
+          rank: number
+        }[]
+      }
       get_hot_polls: {
         Args: { limit_count?: number }
         Returns: {
@@ -690,6 +741,29 @@ export type Database = {
           following_count: number
           votes_cast: number
           votes_received: number
+        }[]
+      }
+      guest_can_preview: {
+        Args: { p_device_id: string }
+        Returns: {
+          can_preview: boolean
+          remaining: number
+          used: number
+        }[]
+      }
+      guest_register_preview: {
+        Args: { p_device_id: string }
+        Returns: {
+          remaining: number
+          success: boolean
+          used: number
+        }[]
+      }
+      record_country_button_event: {
+        Args: { user_uuid: string }
+        Returns: {
+          cooldown_remaining_seconds: number
+          recorded: boolean
         }[]
       }
       validate_poll_input: {
