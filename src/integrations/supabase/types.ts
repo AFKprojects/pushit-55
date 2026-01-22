@@ -425,6 +425,7 @@ export type Database = {
           id: string
           is_premium: boolean
           last_button_action_at: string | null
+          last_country_action_at: string | null
           updated_at: string | null
           username: string | null
         }
@@ -435,6 +436,7 @@ export type Database = {
           id: string
           is_premium?: boolean
           last_button_action_at?: string | null
+          last_country_action_at?: string | null
           updated_at?: string | null
           username?: string | null
         }
@@ -445,6 +447,7 @@ export type Database = {
           id?: string
           is_premium?: boolean
           last_button_action_at?: string | null
+          last_country_action_at?: string | null
           updated_at?: string | null
           username?: string | null
         }
@@ -595,6 +598,7 @@ export type Database = {
           poll_id: string
           updated_at: string | null
           user_id: string
+          vote_edit_count: number
           voted_at: string | null
         }
         Insert: {
@@ -604,6 +608,7 @@ export type Database = {
           poll_id: string
           updated_at?: string | null
           user_id: string
+          vote_edit_count?: number
           voted_at?: string | null
         }
         Update: {
@@ -613,6 +618,7 @@ export type Database = {
           poll_id?: string
           updated_at?: string | null
           user_id?: string
+          vote_edit_count?: number
           voted_at?: string | null
         }
         Relationships: [
@@ -638,6 +644,10 @@ export type Database = {
     }
     Functions: {
       archive_expired_polls: { Args: never; Returns: undefined }
+      can_count_country_action: {
+        Args: { user_uuid: string }
+        Returns: boolean
+      }
       cleanup_button_hold_sessions: { Args: never; Returns: undefined }
       cleanup_poll_vote_sessions: { Args: never; Returns: undefined }
       generate_poll_id: { Args: never; Returns: string }
@@ -648,6 +658,22 @@ export type Database = {
           created_at: string
           creator_username: string
           expires_at: string
+          id: string
+          question: string
+          status: string
+          total_votes: number
+          total_votes_cache: number
+        }[]
+      }
+      get_hot_polls_from_events: {
+        Args: { limit_count?: number }
+        Returns: {
+          boost_count_cache: number
+          created_at: string
+          created_by: string
+          creator_username: string
+          expires_at: string
+          hot_points_24h: number
           id: string
           question: string
           status: string
@@ -672,7 +698,7 @@ export type Database = {
       }
     }
     Enums: {
-      poll_status: "active" | "archived"
+      poll_status: "active" | "archived" | "expired"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -800,7 +826,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      poll_status: ["active", "archived"],
+      poll_status: ["active", "archived", "expired"],
     },
   },
 } as const

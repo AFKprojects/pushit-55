@@ -19,18 +19,32 @@ serve(async (req) => {
     )
 
     const now = new Date().toISOString()
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
 
-    // 1. Archive expired polls (those that passed expires_at)
-    const { data: expiredPolls, error: expiredError } = await supabaseClient
+    // 1. Mark recently expired polls as 'expired' (those that just passed expires_at within last hour)
+    const { data: newlyExpiredPolls, error: expiredError } = await supabaseClient
       .from('polls')
-      .update({ status: 'archived' })
+      .update({ status: 'expired' })
       .eq('status', 'active')
       .lt('expires_at', now)
+      .gte('expires_at', oneHourAgo)
       .select('id')
 
     if (expiredError) {
       throw expiredError
+    }
+
+    // 2. Archive polls that have been expired for more than 1 hour
+    const { data: archivedPolls, error: archiveError } = await supabaseClient
+      .from('polls')
+      .update({ status: 'archived' })
+      .in('status', ['active', 'expired'])
+      .lt('expires_at', oneHourAgo)
+      .select('id')
+
+    if (archiveError) {
+      throw archiveError
     }
 
     // 2. Delete polls older than 30 days (including their options and votes)
@@ -87,9 +101,10 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        archivedCount: expiredPolls?.length || 0,
+        expiredCount: newlyExpiredPolls?.length || 0,
+        archivedCount: archivedPolls?.length || 0,
         deletedCount: deletedCount,
-        message: `Archived ${expiredPolls?.length || 0} expired polls and deleted ${deletedCount} old polls`
+        message: `Expired ${newlyExpiredPolls?.length || 0} polls, archived ${archivedPolls?.length || 0} old polls, deleted ${deletedCount} ancient polls`
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
