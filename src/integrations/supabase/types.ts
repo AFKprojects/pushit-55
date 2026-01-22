@@ -759,13 +759,22 @@ export type Database = {
           used: number
         }[]
       }
-      record_country_button_event: {
-        Args: { user_uuid: string }
-        Returns: {
-          cooldown_remaining_seconds: number
-          recorded: boolean
-        }[]
-      }
+      record_country_button_event:
+        | {
+            Args: { user_uuid: string }
+            Returns: {
+              cooldown_remaining_seconds: number
+              recorded: boolean
+            }[]
+          }
+        | {
+            Args: { session_uuid?: string; user_uuid: string }
+            Returns: {
+              cooldown_remaining_seconds: number
+              reason: string
+              recorded: boolean
+            }[]
+          }
       validate_poll_input: {
         Args: { option_texts: string[]; question_text: string }
         Returns: boolean
