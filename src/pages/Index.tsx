@@ -8,6 +8,7 @@ import MyApp from '../components/MyApp';
 import Onboarding from '../components/Onboarding';
 import { useAuth } from '../hooks/useAuth';
 import { useSessionManager } from '../hooks/useSessionManager';
+import { useGuestPreview } from '../hooks/useGuestPreview';
 import { Button } from '@/components/ui/button';
 import { LogIn, HelpCircle } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -19,8 +20,10 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState('main');
   const [isButtonActivated, setIsButtonActivated] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [guestPreviewActive, setGuestPreviewActive] = useState(false);
   const { user } = useAuth();
   const { activeSessionCount, startSession, endSession } = useSessionManager();
+  const { canPreview, remaining, limitReached, registerPreview, checkPreviewStatus } = useGuestPreview();
   const navigate = useNavigate();
   const params = useParams();
   const { openModal } = usePollModal();
@@ -51,15 +54,35 @@ const Index = () => {
     }
   }, [openModal]);
 
-  const handleHoldStart = () => {
+  // Guest preview: check status on mount and when user changes
+  useEffect(() => {
+    if (!user) {
+      checkPreviewStatus();
+    }
+  }, [user, checkPreviewStatus]);
+
+  const handleHoldStart = async () => {
     if (user) {
+      // Logged in user - start session normally
       startSession();
+    } else {
+      // Guest user - check and register preview
+      if (canPreview) {
+        const success = await registerPreview();
+        if (success) {
+          setGuestPreviewActive(true);
+        }
+      }
     }
   };
 
   const handleHoldEnd = () => {
     if (user) {
+      // Logged in user - end session
       endSession();
+    } else {
+      // Guest user - just hide preview
+      setGuestPreviewActive(false);
     }
   };
 
@@ -145,29 +168,42 @@ const Index = () => {
                 onActivationChange={setIsButtonActivated}
               />
 
-              {/* Absolute positioned counter overlay */}
-              {isButtonActivated && (
-                <div className="absolute -top-24 left-1/2 transform -translate-x-1/2">
-                  <div className="bg-black/40 backdrop-blur-sm rounded-2xl px-8 py-6 border border-orange-500/30 whitespace-nowrap">
-                    {user ? (
-                      // Logged in user - show count
-                      <>
-                        <div className="text-3xl font-bold text-orange-400 mb-2 animate-pulse text-center">
-                          {activeSessionCount}
-                        </div>
-                        <div className="text-orange-200 text-sm text-center">
-                          {activeSessionCount === 1 ? 'person is holding' : 'people are holding'} the button right now
-                        </div>
-                      </>
-                    ) : (
-                      // Not logged in - show login message
-                      <div className="text-orange-200 text-sm text-center">
-                        Log in to see how many people are holding the button with you
+            {/* Absolute positioned counter overlay */}
+            {(isButtonActivated || guestPreviewActive) && (
+              <div className="absolute -top-24 left-1/2 transform -translate-x-1/2">
+                <div className="bg-black/40 backdrop-blur-sm rounded-2xl px-8 py-6 border border-orange-500/30 whitespace-nowrap">
+                  {user ? (
+                    // Logged in user - show count
+                    <>
+                      <div className="text-3xl font-bold text-orange-400 mb-2 animate-pulse text-center">
+                        {activeSessionCount}
                       </div>
-                    )}
-                  </div>
+                      <div className="text-orange-200 text-sm text-center">
+                        {activeSessionCount === 1 ? 'person is holding' : 'people are holding'} the button right now
+                      </div>
+                    </>
+                  ) : guestPreviewActive && !limitReached ? (
+                    // Guest with preview active and limit not reached
+                    <>
+                      <div className="text-3xl font-bold text-orange-400 mb-2 animate-pulse text-center">
+                        {activeSessionCount}
+                      </div>
+                      <div className="text-orange-200 text-sm text-center">
+                        {remaining} preview{remaining !== 1 ? 's' : ''} remaining today
+                      </div>
+                    </>
+                  ) : (
+                    // Guest with limit reached OR not previewing
+                    <div className="text-orange-200 text-sm text-center">
+                      {limitReached 
+                        ? "Daily preview limit reached. Log in for unlimited access!"
+                        : "Log in to see how many people are holding the button with you"
+                      }
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
+            )}
             </div>
           </div>
         );
