@@ -272,20 +272,24 @@ export const useSessionManager = () => {
       }
 
       // Record country button event with 3-min cooldown (for country rankings)
-      // This is called at session end, so user completed at least the hold action
+      // Pass session_id so backend can validate 3s threshold
       if (user) {
         try {
           const { data: countryResult, error: countryError } = await supabase
-            .rpc('record_country_button_event', { user_uuid: user.id });
+            .rpc('record_country_button_event', { 
+              user_uuid: user.id, 
+              session_uuid: currentSessionId 
+            });
           
           if (countryError) {
             console.error('❌ Error recording country event:', countryError);
           } else if (countryResult && countryResult.length > 0) {
-            const result = countryResult[0];
+            const result = countryResult[0] as { recorded: boolean; cooldown_remaining_seconds: number; reason?: string };
             if (result.recorded) {
               console.log('🌍 Country event recorded for ranking');
             } else {
-              console.log('🕐 Country cooldown active, remaining:', result.cooldown_remaining_seconds, 's');
+              console.log('🕐 Country event not recorded:', result.reason || 'unknown', 
+                result.cooldown_remaining_seconds > 0 ? `(cooldown: ${result.cooldown_remaining_seconds}s)` : '');
             }
           }
         } catch (countryErr) {
