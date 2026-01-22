@@ -83,28 +83,34 @@ export const useSessionManager = () => {
     }
   }, []);
 
-  // Clean up inactive sessions using last_heartbeat (10s timeout)
+  // Mark inactive sessions as ended (NOT delete) - preserves data for statistics
   const cleanupInactiveSessions = useCallback(async () => {
     const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
+    const now = new Date().toISOString();
     
     try {
-      console.log('🧹 Starting cleanup of sessions with last_heartbeat older than:', tenSecondsAgo);
+      console.log('🧹 Marking inactive sessions (last_heartbeat older than:', tenSecondsAgo, ')');
       
-      const { data: deleted, error } = await supabase
+      // Update sessions to is_active=false and set ended_at (NOT delete!)
+      const { data: updated, error } = await supabase
         .from('button_holds')
-        .delete()
+        .update({ 
+          is_active: false,
+          ended_at: now
+        })
+        .eq('is_active', true)
         .lt('last_heartbeat', tenSecondsAgo)
         .select('*');
       
       if (error) {
         console.error('Cleanup error:', error);
       } else {
-        console.log('🧹 Cleanup completed - deleted sessions:', deleted?.length || 0);
-        if (deleted && deleted.length > 0) {
-          console.log('🗑️ Deleted sessions:', deleted.map(s => s.id));
-          // Check if we deleted our own session
-          if (currentSessionId && deleted.some(s => s.id === currentSessionId)) {
-            console.log('🚨 WARNING: Cleanup deleted our active session!', currentSessionId);
+        console.log('🧹 Cleanup completed - marked inactive:', updated?.length || 0);
+        if (updated && updated.length > 0) {
+          console.log('📦 Archived sessions:', updated.map(s => s.id));
+          // Check if we archived our own session
+          if (currentSessionId && updated.some(s => s.id === currentSessionId)) {
+            console.log('🚨 WARNING: Cleanup archived our active session!', currentSessionId);
           }
         }
       }
@@ -114,7 +120,7 @@ export const useSessionManager = () => {
     } catch (error) {
       console.error('Error in cleanup:', error);
     }
-  }, [fetchActiveSessions]);
+  }, [fetchActiveSessions, currentSessionId]);
 
   // Send heartbeat for current session - update last_heartbeat to keep it alive
   const sendHeartbeat = useCallback(async () => {
@@ -231,7 +237,7 @@ export const useSessionManager = () => {
     }
   }, [user, country, isHolding, sendHeartbeat, fetchActiveSessions]);
 
-  // End current session
+  // End current session - mark as inactive (NOT delete) for statistics
   const endSession = useCallback(async () => {
     if (!currentSessionId) {
       console.log('🛑 End session called but no current session');
@@ -247,14 +253,19 @@ export const useSessionManager = () => {
         heartbeatInterval.current = null;
       }
 
-      // Delete session
+      const now = new Date().toISOString();
+      
+      // Mark session as inactive (NOT delete) - preserves data for statistics
       const { error } = await supabase
         .from('button_holds')
-        .delete()
+        .update({
+          is_active: false,
+          ended_at: now
+        })
         .eq('id', currentSessionId);
 
       if (error) {
-        console.error('❌ Error deleting session:', error);
+        console.error('❌ Error ending session:', error);
       } else {
         console.log('✅ Session ended successfully:', currentSessionId);
       }

@@ -139,47 +139,61 @@ const Statistics = () => {
   };
 
   const calculateMaxSimultaneous = async (startDate?: string) => {
+    // Fetch ALL holds (both completed and active) for the period
     let query = supabase
       .from('button_holds')
-      .select('started_at, ended_at')
-      .not('ended_at', 'is', null)
+      .select('started_at, ended_at, is_active')
       .order('started_at', { ascending: true });
 
     if (startDate) {
       query = query.gte('started_at', startDate);
     }
 
-    const { data: allHolds } = await query;
-    const { count: activeHolds } = await supabase
-      .from('button_holds')
-      .select('*', { count: 'exact', head: true })
-      .eq('is_active', true);
-
-    let maxSimultaneous = activeHolds || 0;
+    const { data: allHolds, error } = await query;
     
-    if (allHolds && allHolds.length > 0) {
-      const events: Array<{time: Date, type: 'start' | 'end'}> = [];
-      
-      allHolds.forEach(hold => {
-        events.push({ time: new Date(hold.started_at), type: 'start' });
-        if (hold.ended_at) {
-          events.push({ time: new Date(hold.ended_at), type: 'end' });
-        }
-      });
-      
-      events.sort((a, b) => a.time.getTime() - b.time.getTime());
-      
-      let currentSimultaneous = 0;
-      events.forEach(event => {
-        if (event.type === 'start') {
-          currentSimultaneous++;
-          maxSimultaneous = Math.max(maxSimultaneous, currentSimultaneous);
-        } else {
-          currentSimultaneous--;
-        }
-      });
+    if (error) {
+      console.error('Error fetching holds for max simultaneous:', error);
+      return 0;
     }
 
+    console.log('📊 All holds for period:', allHolds?.length || 0);
+
+    if (!allHolds || allHolds.length === 0) {
+      return 0;
+    }
+
+    // Build timeline of events
+    const events: Array<{time: Date, type: 'start' | 'end'}> = [];
+    const now = new Date();
+    
+    allHolds.forEach(hold => {
+      if (hold.started_at) {
+        events.push({ time: new Date(hold.started_at), type: 'start' });
+      }
+      // Use ended_at if available, otherwise use now for active sessions
+      if (hold.ended_at) {
+        events.push({ time: new Date(hold.ended_at), type: 'end' });
+      } else if (hold.is_active) {
+        // Active session - assume it ends now for calculation purposes
+        events.push({ time: now, type: 'end' });
+      }
+    });
+    
+    events.sort((a, b) => a.time.getTime() - b.time.getTime());
+    
+    let currentSimultaneous = 0;
+    let maxSimultaneous = 0;
+    
+    events.forEach(event => {
+      if (event.type === 'start') {
+        currentSimultaneous++;
+        maxSimultaneous = Math.max(maxSimultaneous, currentSimultaneous);
+      } else {
+        currentSimultaneous--;
+      }
+    });
+
+    console.log('📈 Max simultaneous calculated:', maxSimultaneous);
     return maxSimultaneous;
   };
 
