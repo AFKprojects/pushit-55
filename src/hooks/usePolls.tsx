@@ -9,7 +9,8 @@ interface Poll {
   id: string;
   question: string;
   creator_username: string;
-  status: 'active' | 'archived';
+  created_by?: string;
+  status: 'active' | 'expired' | 'archived';
   total_votes: number;
   boostCount: number;
   expires_at: string;
@@ -24,6 +25,7 @@ interface Poll {
   hasVoted?: boolean;
   userVote?: string;
   hotScore?: number;
+  isCreator?: boolean;
 }
 
 type SortMode = 'new' | 'popular' | 'hot';
@@ -69,49 +71,71 @@ export const usePolls = () => {
       } catch (cleanupError) {
         console.warn('Cleanup function failed, continuing with fetch:', cleanupError);
       }
+
+      let pollsData: any[] = [];
+      let pollsError: any = null;
       
-      // Fetch active polls with options - use different sorting based on sortMode
-      // For 'hot' mode, we sort by boost_count_cache, total_votes_cache, created_at
-      // For 'new' mode, we sort by created_at
-      // For 'popular' mode, we sort by total_votes_cache
-      let pollsQuery = supabase
-        .from('polls')
-        .select(`
-          id,
-          question,
-          creator_username,
-          status,
-          total_votes,
-          total_votes_cache,
-          boost_count,
-          boost_count_cache,
-          expires_at,
-          created_at,
-          poll_options (
-            id,
-            option_text,
-            votes
-          )
-        `)
-        .eq('status', 'active')
-        .gt('expires_at', new Date().toISOString());
-      
-      // Apply DB-level sorting based on current sort mode
+      // For 'hot' mode, use RPC function that calculates 24h event-based score (per documentation)
       if (sortMode === 'hot') {
-        pollsQuery = pollsQuery
-          .order('boost_count_cache', { ascending: false })
-          .order('total_votes_cache', { ascending: false })
-          .order('created_at', { ascending: false });
-      } else if (sortMode === 'popular') {
-        pollsQuery = pollsQuery
-          .order('total_votes_cache', { ascending: false })
-          .order('created_at', { ascending: false });
+        const { data: hotPolls, error: hotError } = await supabase.rpc('get_hot_polls_from_events', { limit_count: 50 });
+        
+        if (hotError) {
+          pollsError = hotError;
+        } else {
+          // Fetch poll options for the hot polls
+          const pollIds = hotPolls?.map((p: any) => p.id) || [];
+          if (pollIds.length > 0) {
+            const { data: optionsData } = await supabase
+              .from('poll_options')
+              .select('id, poll_id, option_text, votes')
+              .in('poll_id', pollIds);
+            
+            // Map options to polls
+            pollsData = hotPolls?.map((poll: any) => ({
+              ...poll,
+              poll_options: optionsData?.filter((opt: any) => opt.poll_id === poll.id) || []
+            })) || [];
+          }
+        }
       } else {
-        // 'new' - default
-        pollsQuery = pollsQuery.order('created_at', { ascending: false });
+        // For 'new' and 'popular' modes, use standard query
+        let pollsQuery = supabase
+          .from('polls')
+          .select(`
+            id,
+            question,
+            creator_username,
+            created_by,
+            status,
+            total_votes,
+            total_votes_cache,
+            boost_count,
+            boost_count_cache,
+            expires_at,
+            created_at,
+            poll_options (
+              id,
+              option_text,
+              votes
+            )
+          `)
+          .eq('status', 'active')
+          .gt('expires_at', new Date().toISOString());
+        
+        // Apply DB-level sorting based on current sort mode
+        if (sortMode === 'popular') {
+          pollsQuery = pollsQuery
+            .order('total_votes_cache', { ascending: false })
+            .order('created_at', { ascending: false });
+        } else {
+          // 'new' - default
+          pollsQuery = pollsQuery.order('created_at', { ascending: false });
+        }
+        
+        const result = await pollsQuery;
+        pollsData = result.data || [];
+        pollsError = result.error;
       }
-      
-      const { data: pollsData, error: pollsError } = await pollsQuery;
 
       // Fetch archived polls with options
       const { data: archivedData, error: archivedError } = await supabase
@@ -166,39 +190,43 @@ export const usePolls = () => {
           ?.filter(poll => !hiddenPolls.includes(poll.id))
           ?.map((poll) => {
             const userVote = userVotes.find(v => v.poll_id === poll.id);
+            const isCreator = user && poll.created_by === user.id;
             
             // Calculate total votes from actual option votes (more reliable)
             const actualTotalVotes = poll.poll_options.reduce((sum: number, opt: any) => sum + opt.votes, 0);
             
-            const options = poll.poll_options.map(opt => ({
+            // Per documentation: results hidden before voting (unless creator or voted)
+            const showResults = isCreator || !!userVote || poll.status !== 'active';
+            
+            const options = poll.poll_options.map((opt: any) => ({
               id: opt.id,
               option_text: opt.option_text,
-              votes: opt.votes,
-              percentage: actualTotalVotes > 0 ? Math.round((opt.votes / actualTotalVotes) * 100) : 0
+              votes: showResults ? opt.votes : 0,
+              percentage: showResults && actualTotalVotes > 0 ? Math.round((opt.votes / actualTotalVotes) * 100) : 0
             }));
 
             // Use boost_count_cache for hot sorting (already sorted by DB)
             const boostCount = poll.boost_count_cache ?? poll.boost_count ?? 0;
             
-            // Calculate hot score for display purposes
-            const ageInHours = (Date.now() - new Date(poll.created_at).getTime()) / (1000 * 60 * 60);
-            const timeFactor = Math.max(0.1, 1 / (1 + ageInHours * 0.1)); // Decay over time
-            const hotScore = (actualTotalVotes + boostCount * 3) * timeFactor;
+            // For hot mode, use hot_points_24h from RPC if available
+            const hotScore = poll.hot_points_24h ?? 0;
 
             return {
               id: poll.id,
               question: poll.question,
               creator_username: poll.creator_username,
+              created_by: poll.created_by,
               status: poll.status,
               total_votes: actualTotalVotes, // Use calculated total instead of stored value
-              boostCount: boostCount,
+              boostCount: showResults ? boostCount : 0, // Hide boost count before voting
               expires_at: poll.expires_at,
               created_at: poll.created_at,
               options,
               timeLeft: calculateTimeLeft(poll.expires_at),
               hasVoted: !!userVote,
               userVote: userVote?.option_id,
-              hotScore
+              hotScore,
+              isCreator: !!isCreator
             };
           }) || [];
       };

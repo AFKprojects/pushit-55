@@ -126,15 +126,11 @@ const Polls = ({ onNavigateToCreate }: PollsProps) => {
       {pollsList.map((poll) => {
         const isInEditMode = editingPolls.has(poll.id);
         const hasBeenEdited = editedPolls.has(poll.id);
+        const isCreator = poll.isCreator === true;
         
-        console.log('Poll render debug:', { 
-          id: poll.id.slice(0,8), 
-          originalHasVoted: poll.hasVoted, 
-          isInEditMode, 
-          hasBeenEdited,
-          passedHasVoted: isInEditMode ? false : poll.hasVoted,
-          canEditVote: poll.hasVoted && !hasBeenEdited && !isArchive
-        });
+        // Per documentation: creator cannot vote, so no edit vote either
+        // Only show edit vote if user has voted, not edited yet, not archive, and not creator
+        const canEditVoteForPoll = poll.hasVoted && !hasBeenEdited && !isArchive && !isCreator;
         
         return (
           <PollCard
@@ -156,7 +152,7 @@ const Polls = ({ onNavigateToCreate }: PollsProps) => {
             onBoostPoll={handleBoostPoll}
             canBoost={boostLimits.canBoost}
             hasBoosts={true}
-            canEditVote={poll.hasVoted && !hasBeenEdited && !isArchive}
+            canEditVote={canEditVoteForPoll}
             isEditingVote={isInEditMode}
           />
         );

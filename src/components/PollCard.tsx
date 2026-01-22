@@ -16,7 +16,8 @@ interface Poll {
   id: string;
   question: string;
   creator_username: string;
-  status: 'active' | 'archived';
+  created_by?: string;
+  status: 'active' | 'expired' | 'archived';
   total_votes: number;
   boostCount: number;
   expires_at: string;
@@ -26,6 +27,7 @@ interface Poll {
   hasVoted?: boolean;
   userVote?: string;
   hotScore?: number;
+  isCreator?: boolean;
 }
 
 interface PollCardProps {
@@ -69,7 +71,12 @@ const PollCard = ({
   const [isEditing, setIsEditing] = useState(false);
 
   const isExpired = poll.timeLeft === "Ended";
-  const canVote = user && !isArchive && !isExpired && (!poll.hasVoted || isEditingVote);
+  // Per documentation: creator cannot vote on own poll
+  const isCreator = poll.isCreator === true;
+  // Results visible only after voting OR if creator OR if poll is not active
+  const showResults = poll.hasVoted || isCreator || poll.status !== 'active';
+  // Can vote only if: logged in, not archive, not expired, not voted (unless editing), AND not creator
+  const canVote = user && !isArchive && !isExpired && (!poll.hasVoted || isEditingVote) && !isCreator;
   const showBoostButton = poll.hasVoted && !isArchive && !isExpired;
   const isBoosted = false; // Will be implemented with boost check
   const canBoostPoll = canBoost;
@@ -185,14 +192,21 @@ const PollCard = ({
               <div className="relative z-10">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-orange-200">{option.option_text}</span>
-                  <span className="text-orange-300/80 text-sm">{option.percentage}%</span>
+                  {/* Per documentation: results hidden before voting */}
+                  {showResults ? (
+                    <span className="text-orange-300/80 text-sm">{option.percentage}%</span>
+                  ) : (
+                    <span className="text-orange-300/50 text-sm">?</span>
+                  )}
                 </div>
-                <div className="bg-black/40 rounded-full h-2">
-                  <div
-                    className="bg-gradient-to-r from-orange-400 to-yellow-500 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${option.percentage}%` }}
-                  />
-                </div>
+                {showResults && (
+                  <div className="bg-black/40 rounded-full h-2">
+                    <div
+                      className="bg-gradient-to-r from-orange-400 to-yellow-500 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${option.percentage}%` }}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           );
@@ -206,11 +220,18 @@ const PollCard = ({
             <User size={16} className="mr-1" />
             {poll.total_votes} votes
           </div>
-          {poll.boostCount > 0 && (
+          {/* Per documentation: boost count hidden before voting */}
+          {showResults && poll.boostCount > 0 && (
             <div className="flex items-center">
               <Rocket size={16} className="mr-1" />
               {poll.boostCount} boosts
             </div>
+          )}
+          {/* Indicate if user is the creator (cannot vote) */}
+          {isCreator && (
+            <span className="text-xs text-orange-400/80 bg-orange-500/10 px-2 py-0.5 rounded">
+              Your poll
+            </span>
           )}
         </div>
 
