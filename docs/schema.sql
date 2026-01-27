@@ -1,7 +1,8 @@
 -- ============================================================================
 -- PUSH IT! - Complete Database Schema
--- Generated from live database: 2025-01-25
+-- Generated from live database: 2025-01-27
 -- Source: Direct queries to information_schema, pg_proc, pg_policies, pg_indexes
+-- Verified against: pg_indexes, pg_trigger, pg_proc
 -- ============================================================================
 
 -- ============================================================================
@@ -268,49 +269,84 @@ CREATE TABLE public.poll_vote_holds (
 );
 
 -- ============================================================================
--- INDEXES
+-- INDEXES (Complete list from pg_indexes)
 -- ============================================================================
 
--- polls
-CREATE INDEX idx_polls_status ON public.polls(status);
-CREATE INDEX idx_polls_created_by ON public.polls(created_by);
-CREATE INDEX idx_polls_expires_at ON public.polls(expires_at);
-CREATE INDEX idx_polls_created_at ON public.polls(created_at);
-CREATE INDEX idx_polls_active_expires ON public.polls(status, expires_at) WHERE status = 'active'::public.poll_status;
-
--- poll_options
-CREATE INDEX idx_poll_options_poll_id ON public.poll_options(poll_id);
-
--- user_votes
-CREATE INDEX idx_user_votes_user_id ON public.user_votes(user_id);
-CREATE INDEX idx_user_votes_poll_id ON public.user_votes(poll_id);
-CREATE INDEX idx_user_votes_option_id ON public.user_votes(option_id);
-CREATE INDEX idx_user_votes_voted_at ON public.user_votes(voted_at);
-
--- user_boosts
-CREATE INDEX idx_user_boosts_user_id ON public.user_boosts(user_id);
-CREATE INDEX idx_user_boosts_poll_id ON public.user_boosts(poll_id);
-CREATE INDEX idx_user_boosts_boosted_at ON public.user_boosts(boosted_at);
+-- activity_events
+CREATE INDEX idx_activity_events_country_timestamp ON public.activity_events(country, timestamp_utc);
+CREATE INDEX idx_activity_events_poll_timestamp ON public.activity_events(poll_id, timestamp_utc);
+CREATE INDEX idx_activity_events_source_timestamp ON public.activity_events(source, timestamp_utc);
+CREATE INDEX idx_activity_events_user_source_timestamp ON public.activity_events(user_id, source, timestamp_utc DESC);
+CREATE INDEX idx_activity_events_user_timestamp ON public.activity_events(user_id, timestamp_utc);
+-- Partial indexes for country ranking optimization
+CREATE INDEX idx_activity_events_country_ranking ON public.activity_events(source, timestamp_utc DESC, country)
+  WHERE source = 'country_button_counted';
+CREATE INDEX idx_activity_events_user_cooldown ON public.activity_events(user_id, source, timestamp_utc DESC)
+  WHERE source = 'country_button_counted';
 
 -- button_holds
-CREATE INDEX idx_button_holds_user_id ON public.button_holds(user_id);
-CREATE INDEX idx_button_holds_is_active ON public.button_holds(is_active);
-CREATE INDEX idx_button_holds_last_heartbeat ON public.button_holds(last_heartbeat);
+CREATE INDEX idx_button_holds_active ON public.button_holds(is_active, last_heartbeat);
 CREATE INDEX idx_button_holds_context ON public.button_holds(context_type, context_id);
+-- Partial index for active session lookup
+CREATE INDEX idx_button_holds_active_heartbeat ON public.button_holds(is_active, last_heartbeat DESC)
+  WHERE is_active = true;
 
--- activity_events
-CREATE INDEX idx_activity_events_user_id ON public.activity_events(user_id);
-CREATE INDEX idx_activity_events_country ON public.activity_events(country);
-CREATE INDEX idx_activity_events_source ON public.activity_events(source);
-CREATE INDEX idx_activity_events_timestamp ON public.activity_events(timestamp_utc);
-CREATE INDEX idx_activity_events_poll_id ON public.activity_events(poll_id);
+-- daily_boost_limits
+CREATE INDEX idx_daily_boost_user_date ON public.daily_boost_limits(user_id, boost_date);
+CREATE INDEX idx_daily_push_limits_user_date ON public.daily_boost_limits(user_id, boost_date);
+
+-- guest_previews
+CREATE INDEX idx_guest_previews_device_date ON public.guest_previews(device_id, preview_date);
+
+-- hidden_polls
+CREATE INDEX idx_hidden_polls_user ON public.hidden_polls(user_id, poll_id);
+
+-- poll_options
+CREATE INDEX idx_poll_options_poll ON public.poll_options(poll_id);
+
+-- poll_response_options
+CREATE INDEX idx_poll_response_options_option ON public.poll_response_options(option_id);
+
+-- poll_responses
+CREATE INDEX idx_poll_responses_poll_country ON public.poll_responses(poll_id, country);
+CREATE INDEX idx_poll_responses_poll_submitted ON public.poll_responses(poll_id, submitted_at);
+CREATE INDEX idx_poll_responses_user_submitted ON public.poll_responses(user_id, submitted_at);
 
 -- poll_vote_holds
-CREATE INDEX idx_poll_vote_holds_poll_id ON public.poll_vote_holds(poll_id);
-CREATE INDEX idx_poll_vote_holds_is_active ON public.poll_vote_holds(is_active);
+CREATE INDEX idx_poll_vote_holds_active ON public.poll_vote_holds(is_active, last_heartbeat);
+CREATE INDEX idx_poll_vote_holds_option ON public.poll_vote_holds(option_id);
+CREATE INDEX idx_poll_vote_holds_poll ON public.poll_vote_holds(poll_id);
+CREATE INDEX idx_poll_vote_holds_user ON public.poll_vote_holds(user_id);
+
+-- polls
+CREATE INDEX idx_polls_active ON public.polls(status, expires_at) WHERE status = 'active';
+CREATE INDEX idx_polls_created_by ON public.polls(created_by);
+CREATE INDEX idx_polls_created_at ON public.polls(created_at);
+CREATE INDEX idx_polls_expires ON public.polls(expires_at);
+CREATE INDEX idx_polls_hot ON public.polls(boost_count_cache DESC, total_votes_cache DESC, created_at DESC)
+  WHERE status = 'active';
+CREATE INDEX idx_polls_status ON public.polls(status);
 
 -- profiles
 CREATE INDEX idx_profiles_country ON public.profiles(country);
+
+-- saved_polls
+CREATE INDEX idx_saved_polls_user ON public.saved_polls(user_id, saved_at DESC);
+
+-- user_boosts
+CREATE INDEX idx_user_boosts_boosted_at ON public.user_boosts(boosted_at);
+CREATE INDEX idx_user_boosts_poll ON public.user_boosts(poll_id);
+CREATE INDEX idx_user_boosts_user ON public.user_boosts(user_id);
+
+-- user_follows
+CREATE INDEX idx_user_follows_followed ON public.user_follows(followed_id);
+CREATE INDEX idx_user_follows_follower ON public.user_follows(follower_id);
+
+-- user_votes
+CREATE INDEX idx_user_votes_option ON public.user_votes(option_id);
+CREATE INDEX idx_user_votes_poll ON public.user_votes(poll_id);
+CREATE INDEX idx_user_votes_user ON public.user_votes(user_id);
+CREATE INDEX idx_user_votes_voted_at ON public.user_votes(voted_at);
 
 -- ============================================================================
 -- FUNCTIONS
@@ -1243,10 +1279,11 @@ END;
 $$;
 
 -- ============================================================================
--- TRIGGERS
+-- TRIGGERS (Complete list from pg_trigger - 2025-01-27)
+-- Includes ALL triggers currently in the database
 -- ============================================================================
 
--- user_votes triggers
+-- user_votes triggers (9 total in DB, includes 2 duplicate pairs)
 CREATE TRIGGER block_creator_vote_trigger
   BEFORE INSERT ON public.user_votes
   FOR EACH ROW EXECUTE FUNCTION public.block_creator_vote();
@@ -1267,10 +1304,6 @@ CREATE TRIGGER sync_vote_delete_trigger
   AFTER DELETE ON public.user_votes
   FOR EACH ROW EXECUTE FUNCTION public.sync_vote_delete_to_new_tables();
 
--- NOTE: The following triggers are DUPLICATES and should be removed:
--- poll_vote_count_trigger (duplicate of update_vote_counts_trigger)
--- trigger_update_votes_cache (duplicate of update_votes_cache_trigger)
-
 CREATE TRIGGER update_vote_counts_trigger
   AFTER INSERT OR DELETE ON public.user_votes
   FOR EACH ROW EXECUTE FUNCTION public.update_poll_vote_counts();
@@ -1279,7 +1312,18 @@ CREATE TRIGGER update_votes_cache_trigger
   AFTER INSERT OR UPDATE OR DELETE ON public.user_votes
   FOR EACH ROW EXECUTE FUNCTION public.update_votes_cache();
 
--- user_boosts triggers
+-- DUPLICATE TRIGGERS (exist in DB, should be removed to prevent double-counting):
+CREATE TRIGGER poll_vote_count_trigger
+  AFTER INSERT OR DELETE ON public.user_votes
+  FOR EACH ROW EXECUTE FUNCTION public.update_poll_vote_counts();
+-- ^ DUPLICATE of update_vote_counts_trigger - causes double counting!
+
+CREATE TRIGGER trigger_update_votes_cache
+  AFTER INSERT OR UPDATE OR DELETE ON public.user_votes
+  FOR EACH ROW EXECUTE FUNCTION public.update_votes_cache();
+-- ^ DUPLICATE of update_votes_cache_trigger - causes double cache updates!
+
+-- user_boosts triggers (3 total in DB)
 CREATE TRIGGER sync_boost_counts_trigger
   AFTER INSERT ON public.user_boosts
   FOR EACH ROW EXECUTE FUNCTION public.sync_boost_counts();
@@ -1288,10 +1332,15 @@ CREATE TRIGGER sync_boost_to_activity_trigger
   AFTER INSERT ON public.user_boosts
   FOR EACH ROW EXECUTE FUNCTION public.sync_boost_to_activity_events();
 
--- auth.users trigger (in auth schema)
--- CREATE TRIGGER on_auth_user_created
---   AFTER INSERT ON auth.users
---   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+CREATE TRIGGER update_boost_cache_trigger
+  AFTER INSERT ON public.user_boosts
+  FOR EACH ROW EXECUTE FUNCTION public.update_boost_cache();
+
+-- auth.users trigger (in auth schema, managed by Supabase)
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
 
 -- ============================================================================
 -- ROW LEVEL SECURITY
@@ -1549,7 +1598,7 @@ CREATE POLICY "Users can manage own vote holds"
 
 -- ============================================================================
 -- SCHEMA CHECKSUM / OBJECT LISTING
--- Generated: 2025-01-25
+-- Generated: 2025-01-27 (verified against live database)
 -- ============================================================================
 /*
 TABLES (17):
@@ -1574,7 +1623,7 @@ TABLES (17):
 ENUMS (1):
   1. poll_status (active, archived, expired)
 
-FUNCTIONS (21):
+FUNCTIONS (27):
   1. generate_poll_id()
   2. validate_poll_input(text, text[])
   3. archive_expired_polls()
@@ -1584,8 +1633,8 @@ FUNCTIONS (21):
   7. guest_can_preview(text)
   8. guest_register_preview(text)
   9. can_count_country_action(uuid)
-  10. record_country_button_event(uuid) [legacy]
-  11. record_country_button_event(uuid, uuid)
+  10. record_country_button_event(uuid) [legacy overload]
+  11. record_country_button_event(uuid, uuid) [with session validation]
   12. get_country_rank_daily()
   13. get_country_rank_monthly()
   14. get_country_rank_all_time()
@@ -1603,21 +1652,41 @@ FUNCTIONS (21):
   26. sync_boost_to_activity_events()
   27. handle_new_user()
 
-TRIGGERS (12 unique, 4 duplicates to remove):
-  user_votes:
-    - block_creator_vote_trigger
-    - enforce_vote_edit_limit_trigger
-    - set_user_votes_updated_at_trigger
-    - sync_vote_to_new_tables_trigger
-    - sync_vote_delete_trigger
-    - update_vote_counts_trigger
-    - update_votes_cache_trigger
-    DUPLICATES (to remove):
-    - poll_vote_count_trigger (= update_vote_counts_trigger)
-    - trigger_update_votes_cache (= update_votes_cache_trigger)
-  user_boosts:
-    - sync_boost_counts_trigger
-    - sync_boost_to_activity_trigger
+TRIGGERS (13 in public schema + 1 in auth schema):
+  user_votes (9):
+    - block_creator_vote_trigger → block_creator_vote()
+    - enforce_vote_edit_limit_trigger → enforce_vote_edit_limit()
+    - set_user_votes_updated_at_trigger → set_user_votes_updated_at()
+    - sync_vote_to_new_tables_trigger → sync_vote_to_new_tables()
+    - sync_vote_delete_trigger → sync_vote_delete_to_new_tables()
+    - update_vote_counts_trigger → update_poll_vote_counts()
+    - update_votes_cache_trigger → update_votes_cache()
+    DUPLICATES (should be removed):
+    - poll_vote_count_trigger → update_poll_vote_counts() [= update_vote_counts_trigger]
+    - trigger_update_votes_cache → update_votes_cache() [= update_votes_cache_trigger]
+  user_boosts (3):
+    - sync_boost_counts_trigger → sync_boost_counts()
+    - sync_boost_to_activity_trigger → sync_boost_to_activity_events()
+    - update_boost_cache_trigger → update_boost_cache()
+  auth.users (1):
+    - on_auth_user_created → handle_new_user()
+
+INDEXES (47 total, including PKs and unique constraints):
+  activity_events: 8 (incl. 2 partial indexes for country ranking)
+  button_holds: 4 (incl. 1 partial index for active sessions)
+  daily_boost_limits: 3
+  guest_previews: 2
+  hidden_polls: 2
+  poll_options: 1
+  poll_response_options: 1
+  poll_responses: 3
+  poll_vote_holds: 4
+  polls: 6 (incl. 2 partial indexes for active polls)
+  profiles: 1
+  saved_polls: 1
+  user_boosts: 3
+  user_follows: 2
+  user_votes: 4
 
 RLS POLICIES (43):
   profiles: 2
@@ -1639,7 +1708,7 @@ RLS POLICIES (43):
   poll_vote_holds: 2
 
 FOREIGN KEYS (27):
-  See ALTER TABLE statements above for full list.
+  See CONSTRAINT definitions in CREATE TABLE statements above.
 
 UNIQUE CONSTRAINTS (10):
   - profiles.username
@@ -1652,4 +1721,8 @@ UNIQUE CONSTRAINTS (10):
   - saved_polls (poll_id, user_id)
   - hidden_polls (poll_id, user_id)
   - poll_responses (poll_id, user_id)
+
+TYPE INCONSISTENCIES (noted for future cleanup):
+  - polls.boost_count is NUMERIC, polls.boost_count_cache is INTEGER
+  - poll_options has both 'votes' and 'votes_cache' columns (redundant)
 */
