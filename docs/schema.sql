@@ -269,84 +269,142 @@ CREATE TABLE public.poll_vote_holds (
 );
 
 -- ============================================================================
--- INDEXES (Complete list from pg_indexes)
+-- INDEXES (62 total - extracted from pg_indexes on 2025-01-28)
 -- ============================================================================
 
--- activity_events
-CREATE INDEX idx_activity_events_country_timestamp ON public.activity_events(country, timestamp_utc);
-CREATE INDEX idx_activity_events_poll_timestamp ON public.activity_events(poll_id, timestamp_utc);
-CREATE INDEX idx_activity_events_source_timestamp ON public.activity_events(source, timestamp_utc);
-CREATE INDEX idx_activity_events_user_source_timestamp ON public.activity_events(user_id, source, timestamp_utc DESC);
-CREATE INDEX idx_activity_events_user_timestamp ON public.activity_events(user_id, timestamp_utc);
+-- -----------------------------------------------------------------------------
+-- activity_events (8 indexes)
+-- -----------------------------------------------------------------------------
+CREATE UNIQUE INDEX activity_events_pkey ON public.activity_events USING btree (id);
+CREATE INDEX idx_activity_events_country_timestamp ON public.activity_events USING btree (country, timestamp_utc);
+CREATE INDEX idx_activity_events_poll_timestamp ON public.activity_events USING btree (poll_id, timestamp_utc);
+CREATE INDEX idx_activity_events_source_timestamp ON public.activity_events USING btree (source, timestamp_utc);
+CREATE INDEX idx_activity_events_user_source_timestamp ON public.activity_events USING btree (user_id, source, timestamp_utc DESC);
+CREATE INDEX idx_activity_events_user_timestamp ON public.activity_events USING btree (user_id, timestamp_utc);
 -- Partial indexes for country ranking optimization
-CREATE INDEX idx_activity_events_country_ranking ON public.activity_events(source, timestamp_utc DESC, country)
-  WHERE source = 'country_button_counted';
-CREATE INDEX idx_activity_events_user_cooldown ON public.activity_events(user_id, source, timestamp_utc DESC)
-  WHERE source = 'country_button_counted';
+CREATE INDEX idx_activity_events_country_ranking ON public.activity_events USING btree (source, timestamp_utc DESC, country) WHERE (source = 'country_button_counted'::text);
+CREATE INDEX idx_activity_events_user_cooldown ON public.activity_events USING btree (user_id, source, timestamp_utc DESC) WHERE (source = 'country_button_counted'::text);
 
--- button_holds
-CREATE INDEX idx_button_holds_active ON public.button_holds(is_active, last_heartbeat);
-CREATE INDEX idx_button_holds_context ON public.button_holds(context_type, context_id);
+-- -----------------------------------------------------------------------------
+-- badges (1 index)
+-- -----------------------------------------------------------------------------
+CREATE UNIQUE INDEX badges_pkey ON public.badges USING btree (id);
+
+-- -----------------------------------------------------------------------------
+-- button_holds (4 indexes)
+-- -----------------------------------------------------------------------------
+CREATE UNIQUE INDEX button_holds_pkey ON public.button_holds USING btree (id);
+CREATE INDEX idx_button_holds_active ON public.button_holds USING btree (is_active, last_heartbeat);
+CREATE INDEX idx_button_holds_context ON public.button_holds USING btree (context_type, context_id);
 -- Partial index for active session lookup
-CREATE INDEX idx_button_holds_active_heartbeat ON public.button_holds(is_active, last_heartbeat DESC)
-  WHERE is_active = true;
+CREATE INDEX idx_button_holds_active_heartbeat ON public.button_holds USING btree (is_active, last_heartbeat DESC) WHERE (is_active = true);
 
--- daily_boost_limits
-CREATE INDEX idx_daily_boost_user_date ON public.daily_boost_limits(user_id, boost_date);
-CREATE INDEX idx_daily_push_limits_user_date ON public.daily_boost_limits(user_id, boost_date);
+-- -----------------------------------------------------------------------------
+-- daily_boost_limits (4 indexes)
+-- -----------------------------------------------------------------------------
+CREATE UNIQUE INDEX daily_push_limits_pkey ON public.daily_boost_limits USING btree (id);
+CREATE UNIQUE INDEX daily_push_limits_user_id_push_date_key ON public.daily_boost_limits USING btree (user_id, boost_date);
+CREATE INDEX idx_daily_boost_user_date ON public.daily_boost_limits USING btree (user_id, boost_date);
+CREATE INDEX idx_daily_push_limits_user_date ON public.daily_boost_limits USING btree (user_id, boost_date);
 
--- guest_previews
-CREATE INDEX idx_guest_previews_device_date ON public.guest_previews(device_id, preview_date);
+-- -----------------------------------------------------------------------------
+-- guest_previews (3 indexes)
+-- -----------------------------------------------------------------------------
+CREATE UNIQUE INDEX guest_previews_pkey ON public.guest_previews USING btree (id);
+CREATE UNIQUE INDEX unique_device_date ON public.guest_previews USING btree (device_id, preview_date);
+CREATE INDEX idx_guest_previews_device_date ON public.guest_previews USING btree (device_id, preview_date);
 
--- hidden_polls
-CREATE INDEX idx_hidden_polls_user ON public.hidden_polls(user_id, poll_id);
+-- -----------------------------------------------------------------------------
+-- hidden_polls (3 indexes)
+-- -----------------------------------------------------------------------------
+CREATE UNIQUE INDEX hidden_polls_pkey ON public.hidden_polls USING btree (id);
+CREATE UNIQUE INDEX hidden_polls_poll_id_user_id_key ON public.hidden_polls USING btree (poll_id, user_id);
+CREATE INDEX idx_hidden_polls_user ON public.hidden_polls USING btree (user_id, poll_id);
 
--- poll_options
-CREATE INDEX idx_poll_options_poll ON public.poll_options(poll_id);
+-- -----------------------------------------------------------------------------
+-- poll_options (2 indexes)
+-- -----------------------------------------------------------------------------
+CREATE UNIQUE INDEX poll_options_pkey ON public.poll_options USING btree (id);
+CREATE INDEX idx_poll_options_poll ON public.poll_options USING btree (poll_id);
 
--- poll_response_options
-CREATE INDEX idx_poll_response_options_option ON public.poll_response_options(option_id);
+-- -----------------------------------------------------------------------------
+-- poll_response_options (2 indexes)
+-- -----------------------------------------------------------------------------
+CREATE UNIQUE INDEX poll_response_options_pkey ON public.poll_response_options USING btree (response_id, option_id);
+CREATE INDEX idx_poll_response_options_option ON public.poll_response_options USING btree (option_id);
 
--- poll_responses
-CREATE INDEX idx_poll_responses_poll_country ON public.poll_responses(poll_id, country);
-CREATE INDEX idx_poll_responses_poll_submitted ON public.poll_responses(poll_id, submitted_at);
-CREATE INDEX idx_poll_responses_user_submitted ON public.poll_responses(user_id, submitted_at);
+-- -----------------------------------------------------------------------------
+-- poll_responses (5 indexes)
+-- -----------------------------------------------------------------------------
+CREATE UNIQUE INDEX poll_responses_pkey ON public.poll_responses USING btree (id);
+CREATE UNIQUE INDEX poll_responses_poll_user_unique ON public.poll_responses USING btree (poll_id, user_id);
+CREATE INDEX idx_poll_responses_poll_country ON public.poll_responses USING btree (poll_id, country);
+CREATE INDEX idx_poll_responses_poll_submitted ON public.poll_responses USING btree (poll_id, submitted_at);
+CREATE INDEX idx_poll_responses_user_submitted ON public.poll_responses USING btree (user_id, submitted_at);
 
--- poll_vote_holds
-CREATE INDEX idx_poll_vote_holds_active ON public.poll_vote_holds(is_active, last_heartbeat);
-CREATE INDEX idx_poll_vote_holds_option ON public.poll_vote_holds(option_id);
-CREATE INDEX idx_poll_vote_holds_poll ON public.poll_vote_holds(poll_id);
-CREATE INDEX idx_poll_vote_holds_user ON public.poll_vote_holds(user_id);
+-- -----------------------------------------------------------------------------
+-- poll_vote_holds (4 indexes)
+-- -----------------------------------------------------------------------------
+CREATE UNIQUE INDEX poll_vote_holds_pkey ON public.poll_vote_holds USING btree (id);
+CREATE INDEX idx_poll_vote_holds_active ON public.poll_vote_holds USING btree (is_active, last_heartbeat);
+CREATE INDEX idx_poll_vote_holds_poll_option ON public.poll_vote_holds USING btree (poll_id, option_id);
+CREATE INDEX idx_poll_vote_holds_user ON public.poll_vote_holds USING btree (user_id);
 
--- polls
-CREATE INDEX idx_polls_active ON public.polls(status, expires_at) WHERE status = 'active';
-CREATE INDEX idx_polls_created_by ON public.polls(created_by);
-CREATE INDEX idx_polls_created_at ON public.polls(created_at);
-CREATE INDEX idx_polls_expires ON public.polls(expires_at);
-CREATE INDEX idx_polls_hot ON public.polls(boost_count_cache DESC, total_votes_cache DESC, created_at DESC)
-  WHERE status = 'active';
-CREATE INDEX idx_polls_status ON public.polls(status);
+-- -----------------------------------------------------------------------------
+-- polls (4 indexes)
+-- -----------------------------------------------------------------------------
+CREATE UNIQUE INDEX polls_pkey ON public.polls USING btree (id);
+CREATE INDEX idx_polls_status_created ON public.polls USING btree (status, created_at DESC);
+-- Partial indexes for active poll queries
+CREATE INDEX idx_polls_expires_status ON public.polls USING btree (expires_at, status) WHERE (status = 'active'::poll_status);
+CREATE INDEX idx_polls_hot_feed ON public.polls USING btree (status, expires_at, boost_count_cache DESC, total_votes_cache DESC, created_at DESC) WHERE (status = 'active'::poll_status);
 
--- profiles
-CREATE INDEX idx_profiles_country ON public.profiles(country);
+-- -----------------------------------------------------------------------------
+-- profiles (2 indexes)
+-- -----------------------------------------------------------------------------
+CREATE UNIQUE INDEX profiles_pkey ON public.profiles USING btree (id);
+CREATE UNIQUE INDEX profiles_username_key ON public.profiles USING btree (username);
 
--- saved_polls
-CREATE INDEX idx_saved_polls_user ON public.saved_polls(user_id, saved_at DESC);
+-- -----------------------------------------------------------------------------
+-- saved_polls (3 indexes)
+-- -----------------------------------------------------------------------------
+CREATE UNIQUE INDEX saved_polls_pkey ON public.saved_polls USING btree (id);
+CREATE UNIQUE INDEX saved_polls_poll_id_user_id_key ON public.saved_polls USING btree (poll_id, user_id);
+CREATE INDEX idx_saved_polls_user ON public.saved_polls USING btree (user_id, poll_id);
 
--- user_boosts
-CREATE INDEX idx_user_boosts_boosted_at ON public.user_boosts(boosted_at);
-CREATE INDEX idx_user_boosts_poll ON public.user_boosts(poll_id);
-CREATE INDEX idx_user_boosts_user ON public.user_boosts(user_id);
+-- -----------------------------------------------------------------------------
+-- user_badges (4 indexes)
+-- -----------------------------------------------------------------------------
+CREATE UNIQUE INDEX user_badges_pkey ON public.user_badges USING btree (id);
+CREATE UNIQUE INDEX user_badges_user_id_badge_id_key ON public.user_badges USING btree (user_id, badge_id);
+CREATE INDEX idx_user_badges_badge ON public.user_badges USING btree (badge_id);
+CREATE INDEX idx_user_badges_user ON public.user_badges USING btree (user_id);
 
--- user_follows
-CREATE INDEX idx_user_follows_followed ON public.user_follows(followed_id);
-CREATE INDEX idx_user_follows_follower ON public.user_follows(follower_id);
+-- -----------------------------------------------------------------------------
+-- user_boosts (6 indexes)
+-- -----------------------------------------------------------------------------
+CREATE UNIQUE INDEX user_pushes_pkey ON public.user_boosts USING btree (id);
+CREATE UNIQUE INDEX user_pushes_user_id_poll_id_key ON public.user_boosts USING btree (user_id, poll_id);
+CREATE INDEX idx_user_boosts_boosted_at ON public.user_boosts USING btree (boosted_at DESC);
+CREATE INDEX idx_user_boosts_user_poll ON public.user_boosts USING btree (user_id, poll_id);
+CREATE INDEX idx_user_pushes_poll_id ON public.user_boosts USING btree (poll_id);
+CREATE INDEX idx_user_pushes_user_id ON public.user_boosts USING btree (user_id);
 
--- user_votes
-CREATE INDEX idx_user_votes_option ON public.user_votes(option_id);
-CREATE INDEX idx_user_votes_poll ON public.user_votes(poll_id);
-CREATE INDEX idx_user_votes_user ON public.user_votes(user_id);
-CREATE INDEX idx_user_votes_voted_at ON public.user_votes(voted_at);
+-- -----------------------------------------------------------------------------
+-- user_follows (4 indexes)
+-- -----------------------------------------------------------------------------
+CREATE UNIQUE INDEX user_follows_pkey ON public.user_follows USING btree (id);
+CREATE UNIQUE INDEX user_follows_follower_id_followed_id_key ON public.user_follows USING btree (follower_id, followed_id);
+CREATE INDEX idx_user_follows_followed ON public.user_follows USING btree (followed_id);
+CREATE INDEX idx_user_follows_follower ON public.user_follows USING btree (follower_id);
+
+-- -----------------------------------------------------------------------------
+-- user_votes (4 indexes)
+-- -----------------------------------------------------------------------------
+CREATE UNIQUE INDEX user_votes_pkey ON public.user_votes USING btree (id);
+CREATE UNIQUE INDEX user_votes_poll_id_user_id_key ON public.user_votes USING btree (poll_id, user_id);
+CREATE INDEX idx_user_votes_user_poll ON public.user_votes USING btree (user_id, poll_id);
+CREATE INDEX idx_user_votes_voted_at ON public.user_votes USING btree (voted_at DESC);
 
 -- ============================================================================
 -- FUNCTIONS
@@ -1671,21 +1729,23 @@ TRIGGERS (13 in public schema + 1 in auth schema):
   auth.users (1):
     - on_auth_user_created → handle_new_user()
 
-INDEXES (47 total, including PKs and unique constraints):
+INDEXES (62 total - verified from pg_indexes on 2025-01-28):
   activity_events: 8 (incl. 2 partial indexes for country ranking)
+  badges: 1
   button_holds: 4 (incl. 1 partial index for active sessions)
-  daily_boost_limits: 3
-  guest_previews: 2
-  hidden_polls: 2
-  poll_options: 1
-  poll_response_options: 1
-  poll_responses: 3
+  daily_boost_limits: 4 (incl. 2 duplicate idx_daily_*_user_date)
+  guest_previews: 3
+  hidden_polls: 3
+  poll_options: 2
+  poll_response_options: 2
+  poll_responses: 5
   poll_vote_holds: 4
-  polls: 6 (incl. 2 partial indexes for active polls)
-  profiles: 1
-  saved_polls: 1
-  user_boosts: 3
-  user_follows: 2
+  polls: 4 (incl. 2 partial indexes for active polls)
+  profiles: 2
+  saved_polls: 3
+  user_badges: 4
+  user_boosts: 6 (incl. legacy idx_user_pushes_* naming)
+  user_follows: 4
   user_votes: 4
 
 RLS POLICIES (43):
